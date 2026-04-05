@@ -32,9 +32,9 @@
     - Mulai lacak kebiasaan Anda!
 
 5. PENGEMBANG
-    - Nama: [Nama Anda]
-    - NIM: [NIM Anda]
-    - Jurusan: [Jurusan Anda]
+    - Nama: [Syafiq Ahmad Annaufal]
+    - NIM: [A320250013]
+    - Jurusan: [Rekayasa Perangkat Lunak]
 
     - Nama: [Nama Anda]
     - NIM: [NIM Anda]

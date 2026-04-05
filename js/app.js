@@ -2,7 +2,7 @@
 const SUPABASE_URL = 'https://loovtbdzjgpqamhssnue.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxvb3Z0YmR6amdwcWFtaHNzbnVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDI3MTcsImV4cCI6MjA5MDc3ODcxN30.StgTqDRbsasnEq7gfnkF4P1bZTaV8pf3BmPIhUPFI4Q';
 // Ensure Supabase JS CDN is loaded in HTML before app.js
-const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 // Initialize theme
 function initTheme() {
@@ -82,10 +82,10 @@ function toggleHabit(btn) {
     }
 }
 
-// DOM Loaded setup
-document.addEventListener('DOMContentLoaded', () => {
+function initApp() {
     initTheme();
     renderDynamicDateSlider();
+    initHeroSlider();
     
     // Add ripple effect to buttons
     const rippleButtons = document.querySelectorAll('.fab, .nav-item, .date-card, .check-btn');
@@ -117,22 +117,87 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    // Init hero slider if present
-    initHeroSlider();
-    
     // Setup Supabase Auth Listener
-    if (supabase) {
+    if (supabaseClient) {
         setupAuthListener();
     }
-});
+}
+
+function initHeroSlider() {
+    const track = document.getElementById('hero-slider-track');
+    const dotsContainer = document.getElementById('hero-slider-dots');
+    
+    if (!track || !dotsContainer) return;
+    
+    const dots = Array.from(dotsContainer.querySelectorAll('button'));
+    
+    const updateDots = () => {
+        const scrollLeft = track.scrollLeft;
+        const width = track.clientWidth;
+        // Prevent div by zero if width is 0
+        if (width === 0) return;
+        
+        const currentSlideIndex = Math.round(scrollLeft / width);
+        
+        const theme = document.documentElement.getAttribute('data-theme') || 'green';
+        const primaryColor = theme === 'blue' ? '#5BA4C9' : '#10B981';
+        
+        dots.forEach((dot, index) => {
+            if (index === currentSlideIndex) {
+                 dot.style.opacity = '1';
+                 dot.style.width = '1.25rem'; // w-5
+                 dot.style.backgroundColor = primaryColor;
+                 dot.classList.add('dot-active');
+            } else {
+                 dot.style.opacity = '0.5';
+                 dot.style.width = '0.5rem'; // w-2
+                 dot.style.backgroundColor = 'white';
+                 dot.classList.remove('dot-active');
+            }
+        });
+    };
+
+    track.addEventListener('scroll', updateDots);
+
+    // Initial setting of dots based on the theme
+    updateDots();
+    
+    // Add click event to dots to navigate to the specific slide
+    dots.forEach((dot, index) => {
+        dot.addEventListener('click', () => {
+            const width = track.clientWidth;
+            track.scrollTo({
+                left: index * width,
+                behavior: 'smooth'
+            });
+        });
+    });
+
+    // Update dots colors when theme changes
+    document.addEventListener('themeChanged', (e) => {
+        const theme = e.detail.theme;
+        const primaryColor = theme === 'blue' ? '#5BA4C9' : '#10B981';
+        const activeDot = dotsContainer.querySelector('.dot-active');
+        if (activeDot) {
+            activeDot.style.backgroundColor = primaryColor;
+        }
+    });
+}
+
+// Ensure initApp runs reliably whether script loads before or after DOM parse
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    initApp();
+}
 
 // --- Supabase Authentication Logic --- //
 
 async function setupAuthListener() {
-    const { data: { session }, error } = await supabase.auth.getSession();
+    const { data: { session }, error } = await supabaseClient.auth.getSession();
     handleRouteProtection(session);
 
-    supabase.auth.onAuthStateChange((event, session) => {
+    supabaseClient.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_IN') {
             console.log('User signed in');
             handleRouteProtection(session);
@@ -166,7 +231,7 @@ async function handleEmailLogin(event) {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
         email: email,
         password: password,
     });
@@ -189,7 +254,7 @@ async function handleEmailRegister(event) {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
 
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await supabaseClient.auth.signUp({
         email: email,
         password: password,
         options: {
@@ -212,11 +277,11 @@ async function handleEmailRegister(event) {
 }
 
 async function handleGoogleAuth() {
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabaseClient.auth.signInWithOAuth({
         provider: 'google',
         options: {
             // redirect to dashboard after google auth
-            redirectTo: window.location.origin + '/index.html'
+            redirectTo: window.location.origin + '/views/index.html'
         }
     });
     
@@ -230,62 +295,13 @@ async function handleSignOut() {
         try {
             document.body.style.opacity = '0';
             document.body.style.transition = 'opacity 0.5s ease';
-            await supabase.auth.signOut();
+            await supabaseClient.auth.signOut();
             window.location.href = 'login.html';
         } catch (error) {
             console.error('Logout error:', error);
             document.body.style.opacity = '1';
         }
     }
-}
-
-// Hero Slider features
-let currentSlide = 0;
-let slideInterval;
-
-function initHeroSlider() {
-    const track = document.getElementById('hero-slider-track');
-    if (!track) return;
-    
-    // Auto slide every 4 seconds
-    startSlideInterval();
-    
-    // Allow pause on hover/touch
-    const section = document.getElementById('hero-slider-section');
-    section.addEventListener('mouseenter', () => clearInterval(slideInterval));
-    section.addEventListener('mouseleave', startSlideInterval);
-    section.addEventListener('touchstart', () => clearInterval(slideInterval), {passive: true});
-    section.addEventListener('touchend', startSlideInterval, {passive: true});
-}
-
-function startSlideInterval() {
-    clearInterval(slideInterval);
-    slideInterval = setInterval(() => {
-        let nextSlide = (currentSlide + 1) % 3;
-        goToSlide(nextSlide);
-    }, 4000);
-}
-
-function goToSlide(index) {
-    const track = document.getElementById('hero-slider-track');
-    const indicators = document.getElementById('hero-indicators');
-    if (!track || !indicators) return;
-    
-    currentSlide = index;
-    // Move track x direction by multiples of 33.333%
-    // Since width is 300% (3 slides), each slide takes 100/3 = 33.3333% of the container width
-    const translateX = -(index * 33.333333);
-    track.style.transform = `translateX(${translateX}%)`;
-    
-    // Update indicators visually
-    const buttons = indicators.querySelectorAll('button');
-    buttons.forEach((btn, i) => {
-        if (i === index) {
-            btn.className = 'w-2.5 h-2.5 rounded-full bg-white opacity-100 shadow-sm transition-all';
-        } else {
-            btn.className = 'w-1.5 h-1.5 rounded-full bg-white opacity-50 hover:opacity-100 transition-all';
-        }
-    });
 }
 
 // Dynamic Date rendering for horizontal scroll
