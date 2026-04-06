@@ -36,9 +36,9 @@
     - NIM: [A320250013]
     - Jurusan: [Rekayasa Perangkat Lunak]
 
-    - Nama: [Nama Anda]
-    - NIM: [NIM Anda]
-    - Jurusan: [Jurusan Anda]
+    - Nama: [Muhammad Aulia Akbar]
+    - NIM: [A320250033]
+    - Jurusan: [Rekayasa Perangkat Lunak]
 
     - Nama: [Nama Anda]
     - NIM: [NIM Anda]
