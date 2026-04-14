@@ -48,9 +48,9 @@
     - NIM: [NIM Anda]
     - Jurusan: [Jurusan Anda]
 
-    - Nama: [Nama Anda]
-    - NIM: [NIM Anda]
-    - Jurusan: [Jurusan Anda]
+    - Nama: [Zaky Choirul Alfan]
+    - NIM: [A320250001]
+    - Jurusan: [Rekayasa Perangkat Lunak]
     
     - Nama: [Nama Anda]
     - NIM: [NIM Anda]
