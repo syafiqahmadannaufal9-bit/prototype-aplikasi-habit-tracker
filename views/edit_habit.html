@@ -429,8 +429,9 @@
             document.getElementById('edit-habit-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 if (!editingHabit) {
-                    alert("Habit ID missing or invalid!");
-                    return window.location.href = 'index.html';
+                    showToast("Habit ID missing or invalid!", "error");
+                    setTimeout(() => window.location.href = 'index.html', 1500);
+                    return;
                 }
 
                 const btn = e.target.querySelector('button[type="submit"]');
@@ -480,9 +481,9 @@
                 }
 
                 setTimeout(() => {
-                    alert("Habit updated successfully!");
-                    window.location.href = "index.html";
-                }, 800);
+                    showToast("Habit updated successfully!");
+                    setTimeout(() => window.location.href = "index.html", 1000);
+                }, 300);
             });
         });
 

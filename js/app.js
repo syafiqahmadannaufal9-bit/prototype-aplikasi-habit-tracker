@@ -169,6 +169,113 @@ function initApp() {
 
 // initHeroSlider removed — Swiper.js handles the hero slider in index.html
 
+// === Custom Toast Notification System ===
+window.showToast = function(message, type = 'success') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'fixed top-safe pt-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-3 pointer-events-none w-full px-4 max-w-md';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    const isError = type === 'error';
+    
+    const theme = document.documentElement.getAttribute('data-theme') || 'green';
+    const isBlue = theme === 'blue';
+    const iconClass = isError ? 'fa-circle-exclamation text-red-500' : 'fa-circle-check ' + (isBlue ? 'text-[#5BA4C9]' : 'text-[#10B981]');
+    
+    toast.className = 'bg-white shadow-[0_8px_24px_-4px_rgba(0,0,0,0.15)] rounded-2xl px-5 py-3.5 flex items-start gap-3.5 transform -translate-y-12 opacity-0 transition-all duration-400 cubic-bezier(0.16, 1, 0.3, 1) pointer-events-auto border border-gray-100 w-full animate-slide-down';
+    
+    toast.innerHTML = `
+        <div class="mt-0.5"><i class="fa-solid ${iconClass} text-xl shrink-0"></i></div>
+        <p class="text-sm font-semibold text-gray-700 leading-snug flex-1">${message}</p>
+        <button class="text-gray-400 hover:text-gray-600 transition-colors ml-1" onclick="this.parentElement.remove()"><i class="fa-solid fa-xmark"></i></button>
+    `;
+
+    container.appendChild(toast);
+    
+    requestAnimationFrame(() => {
+        toast.style.transform = 'translateY(0)';
+        toast.style.opacity = '1';
+    });
+
+    setTimeout(() => {
+        if (!toast.isConnected) return;
+        toast.style.transform = 'translateY(-12px) scale(0.95)';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 400); 
+    }, 4000); 
+};
+
+// === Global Confirm Modal System ===
+window.showConfirmModal = function(title, message, confirmText, confirmClass, onConfirm, cancelText = 'Cancel') {
+    let modal = document.getElementById('global-confirm-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'global-confirm-modal';
+        modal.className = 'fixed inset-0 bg-gray-900/40 z-[110] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 px-6 backdrop-blur-sm';
+        modal.innerHTML = `
+            <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300 popup-content" id="g-confirm-box">
+                <div class="w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-4 mx-auto" id="g-confirm-icon">
+                    <i class="fa-solid fa-circle-question"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 text-center mb-2" id="g-confirm-title"></h3>
+                <p class="text-gray-500 text-center text-sm mb-6" id="g-confirm-msg"></p>
+                <div class="flex gap-3">
+                    <button class="flex-1 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors" id="g-confirm-cancel"></button>
+                    <button class="flex-1 py-3.5 font-bold rounded-xl transition-colors text-white shadow-md focus:outline-none" id="g-confirm-btn"></button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    document.getElementById('g-confirm-title').textContent = title;
+    document.getElementById('g-confirm-msg').textContent = message;
+    
+    const iconContainer = document.getElementById('g-confirm-icon');
+    const confirmBtn = document.getElementById('g-confirm-btn');
+    const cancelBtn = document.getElementById('g-confirm-cancel');
+    
+    cancelBtn.textContent = cancelText;
+    confirmBtn.textContent = confirmText;
+    confirmBtn.className = `flex-1 py-3.5 font-bold rounded-xl transition-colors text-white shadow-md focus:outline-none ${confirmClass}`;
+    
+    if (confirmClass.includes('red')) {
+        iconContainer.className = 'w-14 h-14 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-2xl mb-4 mx-auto';
+        iconContainer.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+    } else {
+        const theme = document.documentElement.getAttribute('data-theme') || 'green';
+        const isBlue = theme === 'blue';
+        const bgCls = isBlue ? 'bg-blue-50 text-[#5BA4C9]' : 'bg-green-50 text-[#10B981]';
+        iconContainer.className = `w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-4 mx-auto ${bgCls}`;
+        iconContainer.innerHTML = '<i class="fa-solid fa-circle-question"></i>';
+        
+        if (!confirmClass.includes('bg-')) {
+            confirmBtn.classList.add('theme-bg-update');
+            confirmBtn.style.backgroundColor = isBlue ? '#5BA4C9' : '#10B981';
+        }
+    }
+    
+    modal.classList.remove('opacity-0', 'pointer-events-none');
+    document.getElementById('g-confirm-box').classList.remove('scale-95');
+    document.getElementById('g-confirm-box').classList.add('scale-100');
+    
+    const close = () => {
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        document.getElementById('g-confirm-box').classList.remove('scale-100');
+        document.getElementById('g-confirm-box').classList.add('scale-95');
+    };
+    
+    cancelBtn.onclick = () => close();
+    confirmBtn.onclick = () => {
+        close();
+        if (onConfirm) onConfirm();
+    };
+};
+
 // Ensure initApp runs reliably whether script loads before or after DOM parse
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initApp);
@@ -222,7 +329,7 @@ async function handleEmailLogin(event) {
     });
 
     if (error) {
-        alert("Login failed: " + error.message);
+        showToast("Login failed: " + error.message, 'error');
         btn.innerText = originalText;
         btn.disabled = false;
     }
@@ -252,16 +359,16 @@ async function handleEmailRegister(event) {
     });
 
     if (error) {
-        alert("Registration failed: " + error.message);
+        showToast("Registration failed: " + error.message, 'error');
         btn.innerText = originalText;
         btn.disabled = false;
     } else if (data.user && !data.session) {
         // Supabase returns user but no session when email already exists (repeated signup)
         // or when email confirmation is pending
-        alert("This email is already registered. Please log in instead, or use 'Forgot Password' if you've forgotten your password.");
+        showToast("This email is already registered. Please log in instead, or use 'Forgot Password'.", 'error');
         btn.innerText = originalText;
         btn.disabled = false;
-        window.location.href = 'login.html';
+        setTimeout(() => window.location.href = 'login.html', 2000);
     } else {
         // Successful registration — user is auto-confirmed
         if (data.user) {
@@ -278,7 +385,7 @@ async function handleEmailRegister(event) {
                 console.error('Profile save error:', profileErr);
             }
         }
-        alert('Account created successfully! You can now log in.');
+        showToast('Account created successfully! You can now log in.');
         btn.innerText = originalText;
         btn.disabled = false;
         window.location.href = 'login.html';
@@ -288,17 +395,24 @@ async function handleEmailRegister(event) {
 // Google OAuth removed — currently disabled in the UI
 
 async function handleSignOut() {
-    if(confirm("Are you sure you want to log out?")) {
-        try {
-            document.body.style.opacity = '0';
-            document.body.style.transition = 'opacity 0.5s ease';
-            await supabaseClient.auth.signOut();
-            window.location.href = 'login.html';
-        } catch (error) {
-            console.error('Logout error:', error);
-            document.body.style.opacity = '1';
+    showConfirmModal(
+        'Log Out', 
+        'Are you sure you want to log out of your account?', 
+        'Log Out', 
+        'bg-red-500 hover:bg-red-600', 
+        async () => {
+            try {
+                document.body.style.opacity = '0';
+                document.body.style.transition = 'opacity 0.5s ease';
+                await supabaseClient.auth.signOut();
+                window.location.href = 'login.html';
+            } catch (error) {
+                console.error('Logout error:', error);
+                document.body.style.opacity = '1';
+                showToast("Failed to log out. Please try again.", "error");
+            }
         }
-    }
+    );
 }
 
 // Dynamic Date rendering for horizontal scroll
@@ -320,18 +434,21 @@ function renderDynamicDateSlider() {
     let monthHtml = '';
     months.forEach((m, i) => {
         if (i === currentMonth) {
-            monthHtml += `<button class="text-sm font-medium text-white bg-[var(--primary)] px-4 py-1.5 rounded-full whitespace-nowrap shadow-md focus:outline-none theme-bg-update" id="active-month-btn">${m}</button>`;
+            monthHtml += `<button class="shrink-0 text-sm font-medium text-white bg-[var(--primary)] px-4 py-1.5 rounded-full whitespace-nowrap shadow-md focus:outline-none theme-bg-update" id="active-month-btn">${m}</button>`;
         } else {
-            monthHtml += `<button class="text-sm font-medium text-gray-500 whitespace-nowrap focus:outline-none" onclick="changeSliderMonth(${i})">${m}</button>`;
+            monthHtml += `<button class="shrink-0 text-sm font-medium text-gray-500 whitespace-nowrap focus:outline-none" onclick="changeSliderMonth(${i})">${m}</button>`;
         }
     });
     monthContainer.innerHTML = monthHtml;
     
-    // Scroll month container to active month
+    // Smooth scroll month container to active month
     setTimeout(() => {
         const activeMonthBtn = document.getElementById('active-month-btn');
         if (activeMonthBtn) {
-            monthContainer.scrollLeft = activeMonthBtn.offsetLeft - 24;
+            monthContainer.scrollTo({
+                left: activeMonthBtn.offsetLeft - 24,
+                behavior: 'smooth'
+            });
         }
     }, 50);
 
@@ -413,7 +530,10 @@ function renderDatesForMonth(year, monthIndex, activeDateToSet = null, scroll = 
         setTimeout(() => {
             const activeEl = document.getElementById(activeId);
             if(activeEl) {
-                dateContainer.scrollLeft = activeEl.offsetLeft - 24;
+                dateContainer.scrollTo({
+                    left: activeEl.offsetLeft - 24,
+                    behavior: 'smooth'
+                });
             }
         }, 50);
     }
@@ -438,17 +558,25 @@ function changeSliderMonth(monthIndex) {
     
     months.forEach((m, i) => {
         if (i === monthIndex) {
-            monthHtml += `<button class="text-sm font-medium text-white px-4 py-1.5 rounded-full whitespace-nowrap shadow-md focus:outline-none theme-bg-update" id="active-month-btn" style="background-color: ${primaryColor}">${m}</button>`;
+            monthHtml += `<button class="shrink-0 text-sm font-medium text-white px-4 py-1.5 rounded-full whitespace-nowrap shadow-md focus:outline-none theme-bg-update" id="active-month-btn" style="background-color: ${primaryColor}">${m}</button>`;
         } else {
-            monthHtml += `<button class="text-sm font-medium text-gray-500 whitespace-nowrap focus:outline-none" onclick="changeSliderMonth(${i})">${m}</button>`;
+            monthHtml += `<button class="shrink-0 text-sm font-medium text-gray-500 whitespace-nowrap focus:outline-none" onclick="changeSliderMonth(${i})">${m}</button>`;
         }
     });
     monthContainer.innerHTML = monthHtml;
     
     setTimeout(() => {
         const activeMonthBtn = document.getElementById('active-month-btn');
-        if (activeMonthBtn) monthContainer.scrollLeft = activeMonthBtn.offsetLeft - 24;
+        if (activeMonthBtn) {
+            monthContainer.scrollTo({
+                left: activeMonthBtn.offsetLeft - 24,
+                behavior: 'smooth'
+            });
+        }
     }, 50);
+
+    // Let the current page know the month slider rebuilt the dates
+    document.dispatchEvent(new CustomEvent('monthChanged'));
 }
 
 function selectSliderDate(el, dateNum) {

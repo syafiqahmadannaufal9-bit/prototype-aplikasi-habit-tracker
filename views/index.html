@@ -53,25 +53,50 @@
         </button>
     </header>
 
-    <!-- Hero Image Slider (Swiper Cards Effect) -->
+    <!-- Account Status Hero (Glassmorphism) -->
     <section class="px-6 py-4 animate-slide-up delay-100 relative group z-10 w-full max-w-[400px] mx-auto">
-        <div class="swiper heroSwiper w-full h-56 rounded-3xl" id="hero-shadow-container" style="box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.25), 0 8px 10px -6px rgba(16, 185, 129, 0.25);">
-            <div class="swiper-wrapper">
-                <!-- Slide 1 -->
-                <div class="swiper-slide rounded-3xl overflow-hidden shadow-lg border border-white/20">
-                    <img src="../assets/motivation_focus_new_1775412578495.png" class="w-full h-full object-cover" alt="Stay Focused">
+        <div class="relative w-full rounded-3xl bg-white/40 backdrop-blur-xl border border-white/60 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.05)] overflow-visible">
+            <!-- Header Row -->
+            <div class="flex items-center justify-between mb-3 text-white/90">
+                <div class="text-[10px] font-bold tracking-widest uppercase flex items-center gap-1.5 opacity-90">
+                    <span class="w-0.5 h-3 bg-white rounded-full"></span> 
+                    ACCOUNT STATUS
                 </div>
-                <!-- Slide 2 -->
-                <div class="swiper-slide rounded-3xl overflow-hidden shadow-lg border border-white/20">
-                    <img src="../assets/motivation_start_new_1775412596159.png" class="w-full h-full object-cover" alt="Start Today">
-                </div>
-                <!-- Slide 3 -->
-                <div class="swiper-slide rounded-3xl overflow-hidden shadow-lg border border-white/20">
-                    <img src="../assets/motivation_push_new_1775412616227.png" class="w-full h-full object-cover" alt="Keep Pushing">
+                <div class="text-white/80">
+                    <i class="fa-solid fa-ellipsis"></i>
                 </div>
             </div>
-            <!-- Optional Swiper Pagination -->
-            <div class="swiper-pagination mt-2"></div>
+
+            <!-- Title & Rating -->
+            <div class="mb-4">
+                <h2 id="hero-status-title" class="text-3xl font-black text-white tracking-tight drop-shadow-md">
+                    ROOKIE
+                </h2>
+                <div class="flex gap-1 text-yellow-400 text-sm mt-1 drop-shadow-sm" id="hero-rating-stars">
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-regular fa-star"></i>
+                    <i class="fa-regular fa-star"></i>
+                    <i class="fa-regular fa-star"></i>
+                    <i class="fa-regular fa-star"></i>
+                </div>
+            </div>
+
+            <!-- Badges -->
+            <div class="flex gap-2 mb-4">
+                <div class="bg-white/60 backdrop-blur-md rounded-full px-3 py-1 flex items-center gap-1.5 shadow-sm text-xs font-bold text-gray-800 border border-white/50">
+                    <i class="fa-solid fa-fire text-orange-500"></i>
+                    <span id="hero-streak-badge">0 Streak</span>
+                </div>
+                <div class="bg-white/60 backdrop-blur-md rounded-full px-3 py-1 flex items-center gap-1.5 shadow-sm text-xs font-bold text-gray-800 border border-white/50">
+                    <i class="fa-solid fa-bullseye text-blue-500"></i>
+                    <span id="hero-consistency-badge">0% Today</span>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <p id="hero-status-desc" class="text-[13px] text-gray-700 font-medium leading-relaxed">
+                Curious researcher ready to build new habits with boundless enthusiasm. Let's make today count!
+            </p>
         </div>
     </section>
 
@@ -82,7 +107,7 @@
         </div>
 
         <!-- Month Selector -->
-        <div class="flex w-full overflow-x-auto no-scrollbar px-6 gap-6 mb-4 pb-1" id="mobile-month-selector">
+        <div class="flex items-center w-full overflow-x-auto no-scrollbar px-6 gap-6 mb-4 pb-1" id="mobile-month-selector">
             <!-- Dynamically populated -->
         </div>
 
@@ -201,31 +226,59 @@
             // Red dots on date slider
             setTimeout(() => renderHomeDateRedDots(), 300);
             
-            // Initialize Swiper
-            if (typeof Swiper !== 'undefined') {
-                new Swiper(".heroSwiper", {
-                    effect: "cards",
-                    grabCursor: true,
-                    cardsEffect: {
-                        slideShadows: false,
-                        perSlideOffset: 8,
-                        perSlideRotate: 4,
-                    },
-                    autoplay: {
-                        delay: 3500,
-                        disableOnInteraction: false,
-                    },
-                    pagination: {
-                        el: ".swiper-pagination",
-                        dynamicBullets: true,
-                    },
-                });
+            // Update Hero Status Card
+            function updateHeroCard() {
+                const stats = getStatsData('daily'); 
+                const streakBadge = document.getElementById('hero-streak-badge');
+                const consistencyBadge = document.getElementById('hero-consistency-badge');
+                const title = document.getElementById('hero-status-title');
+                const desc = document.getElementById('hero-status-desc');
+                const starsContainer = document.getElementById('hero-rating-stars');
+                
+                if (streakBadge) streakBadge.textContent = `${stats.longestStreak} Days`;
+                if (consistencyBadge) consistencyBadge.textContent = `${stats.completionRate}% Today`;
+                
+                // Determine Level & Stars based on Streak
+                let level = "ROOKIE";
+                let starsHTML = '';
+                let description = "Curious researcher ready to build new habits with boundless enthusiasm. Let's make today count!";
+                
+                if (stats.longestStreak >= 30) {
+                    level = "LEGEND";
+                    description = "An absolute legend. Unstoppable consistency and dedication to self-improvement.";
+                    starsHTML = '<i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>';
+                } else if (stats.longestStreak >= 14) {
+                    level = "MASTER";
+                    description = "Mastering the flow of daily rituals. You've clearly proven your boundless discipline.";
+                    starsHTML = '<i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-regular fa-star"></i>';
+                } else if (stats.longestStreak >= 7) {
+                    level = "EXPERT";
+                    description = "Hitting a solid stride. Keep your streak alive to reach the ultimate master rank!";
+                    starsHTML = '<i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i>';
+                } else if (stats.longestStreak >= 3) {
+                    level = "APPRENTICE";
+                    description = "Building momentum. You've proven you can chain multiple days together. Don't stop!";
+                    starsHTML = '<i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i>';
+                } else {
+                    starsHTML = '<i class="fa-solid fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i>';
+                }
+                
+                if (title) title.textContent = level;
+                if (desc) desc.textContent = description;
+                if (starsContainer) starsContainer.innerHTML = starsHTML;
             }
+            
+            updateHeroCard();
         });
         
         // Listen to theme changes from app.js
         document.addEventListener('themeChanged', (e) => {
             updateShadows(e.detail.theme);
+            renderHomeDateRedDots();
+        });
+
+        // Re-render dots when slider rebuilds the dates
+        document.addEventListener('monthChanged', () => {
             renderHomeDateRedDots();
         });
     </script>

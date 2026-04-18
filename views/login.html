@@ -120,12 +120,12 @@
             try {
                 const { error } = await supabaseClient.auth.resetPasswordForEmail(email.trim());
                 if (error) {
-                    alert('Error: ' + error.message);
+                    showToast('Error: ' + error.message, 'error');
                 } else {
-                    alert('Password reset link sent! Please check your email.');
+                    showToast('Password reset link sent! Please check your email.', 'success');
                 }
             } catch (err) {
-                alert('Failed to send reset link. Please try again.');
+                showToast('Failed to send reset link. Please try again.', 'error');
             }
         }
     </script>

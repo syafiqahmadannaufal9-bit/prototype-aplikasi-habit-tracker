@@ -431,9 +431,9 @@
                 saveHabitsCache(existingHabits);
 
                 setTimeout(() => {
-                    alert("Habit Created Successfully!");
-                    window.location.href = "index.html";
-                }, 800);
+                    showToast("Habit Created Successfully!");
+                    setTimeout(() => window.location.href = "index.html", 1000);
+                }, 300);
             });
         });
 

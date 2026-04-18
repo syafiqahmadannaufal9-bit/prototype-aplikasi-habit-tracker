@@ -159,10 +159,10 @@
                     try {
                         await supabaseClient.from('profiles').update({ full_name: trimmed }).eq('id', _currentUser.id);
                         await supabaseClient.auth.updateUser({ data: { full_name: trimmed } });
-                        alert(`Username updated to ${trimmed}!`);
+                        showToast(`Username updated to ${trimmed}!`);
                     } catch (err) {
                         console.error('Update username error:', err);
-                        alert('Failed to update username. Please try again.');
+                        showToast('Failed to update username. Please try again.', 'error');
                     }
                 }
             }
@@ -175,12 +175,12 @@
                 try {
                     const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
                     if (error) {
-                        alert('Error: ' + error.message);
+                        showToast('Error: ' + error.message, 'error');
                     } else {
-                        alert('Reset link sent! Please check your email.');
+                        showToast('Reset link sent! Please check your email.', 'success');
                     }
                 } catch (err) {
-                    alert('Failed to send reset link.');
+                    showToast('Failed to send reset link.', 'error');
                 }
             }
         }
