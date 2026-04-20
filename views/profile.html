@@ -155,9 +155,29 @@
             }
         }
         
-        function resetPassword() {
-            if(confirm("Send a password reset link to user@example.com?")) {
-                alert("Reset link sent! Please check your email.");
+        async function resetPassword() {
+            const userEmail = document.getElementById('display-email').innerText;
+            const email = userEmail === 'loading...' ? null : userEmail;
+            
+            if (!email) {
+                alert("Unable to retrieve your email address.");
+                return;
+            }
+
+            if(confirm(`Send a password reset link to ${email}?`)) {
+                try {
+                    const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                        redirectTo: window.location.origin + '/views/reset_password.html',
+                    });
+
+                    if (error) {
+                        alert("Error: " + (error.message || 'Failed to send reset link'));
+                    } else {
+                        alert("Password reset link sent! Please check your email.");
+                    }
+                } catch (err) {
+                    alert("Error: " + (err.message || 'An unexpected error occurred'));
+                }
             }
         }
         
