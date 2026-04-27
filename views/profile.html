@@ -32,14 +32,20 @@
     <section class="px-6 mt-4 animate-slide-up delay-100">
         <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col items-center">
             
-            <div class="relative mb-4 group transition-transform hover:scale-105 active:scale-95 cursor-pointer">
-                <div class="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg">
+            <div class="relative mb-4 group transition-transform hover:scale-105 active:scale-95 cursor-pointer" onclick="document.getElementById('avatar-input').click()">
+                <div class="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg relative">
                     <img id="profile-img" src="https://i.pravatar.cc/150?img=11" alt="Profile Name" class="w-full h-full object-cover">
+                    <!-- Loading indicator saat upload -->
+                    <div id="avatar-loading" class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 transition-opacity duration-300 hidden">
+                        <i class="fa-solid fa-spinner fa-spin text-white text-2xl"></i>
+                    </div>
                 </div>
-                <div class="absolute bottom-0 right-0 bg-[var(--primary)] text-white w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                <div class="absolute bottom-0 right-0 bg-[var(--primary)] text-white w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow-sm hover:scale-110 transition-transform">
                     <i class="fa-solid fa-camera text-xs"></i>
                 </div>
             </div>
+            <!-- Tambahkan ini setelah div foto profil -->
+            <input type="file" id="avatar-input" accept="image/*" class="hidden">
             
             <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2 mt-2">
                 <span id="display-username">Loading...</span>
@@ -284,17 +290,121 @@
             handleSignOut();
         }
 
+        async function uploadAvatar(file) {
+            if (!_currentUser) {
+                showToast('User tidak ditemukan. Silakan login kembali.', 'error');
+                return;
+            }
+
+            // Validasi tipe file
+            const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                showToast('Format file tidak didukung. Gunakan JPG, PNG, WEBP, atau GIF.', 'error');
+                return;
+            }
+
+            // Validasi ukuran file (maks 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('File terlalu besar. Maksimal 2MB.', 'error');
+                return;
+            }
+
+            // Tampilkan loading state
+            const profileImg = document.getElementById('profile-img');
+            const loadingIndicator = document.getElementById('avatar-loading');
+            const originalSrc = profileImg.src;
+            
+            loadingIndicator.classList.remove('hidden');
+            loadingIndicator.classList.add('opacity-100');
+            loadingIndicator.style.opacity = '1';
+
+            try {
+                const fileExt = file.name.split('.').pop().toLowerCase();
+                const fileName = `${_currentUser.id}_${Date.now()}.${fileExt}`;
+                const filePath = `public/${fileName}`;
+
+                // Upload ke Supabase Storage
+                const { error: uploadError, data } = await supabaseClient.storage
+                    .from('avatars')
+                    .upload(filePath, file, { upsert: true });
+
+                if (uploadError) throw uploadError;
+
+                // Ambil URL publik
+                const { data: publicData } = supabaseClient.storage
+                    .from('avatars')
+                    .getPublicUrl(filePath);
+
+                const publicUrl = publicData.publicUrl;
+
+                // Tampilkan foto baru langsung di UI
+                profileImg.src = publicUrl;
+
+                // Simpan URL ke tabel profiles di Supabase
+                await supabaseClient
+                    .from('profiles')
+                    .update({ avatar_url: publicUrl })
+                    .eq('id', _currentUser.id);
+
+                showToast('Foto profil berhasil diperbarui!', 'success');
+
+            } catch (err) {
+                console.error('Upload error:', err);
+                showToast('Gagal mengunggah foto. Silakan coba lagi.', 'error');
+                // Restore original image on error
+                profileImg.src = originalSrc;
+            } finally {
+                // Sembunyikan loading state
+                loadingIndicator.style.opacity = '0';
+                setTimeout(() => {
+                    loadingIndicator.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        // Listener ketika user memilih file
+        document.getElementById('avatar-input').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                uploadAvatar(file);
+                this.value = ''; // Reset supaya bisa ganti foto lagi
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', async () => {
             // Fetch User Details to display
             if (supabaseClient) {
-                const { data: { user } } = await supabaseClient.auth.getUser();
-                if (user) {
+                const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+                if (user && !userError) {
                     _currentUser = user;
                     const name = user.user_metadata?.full_name || 'User';
-                    const email = user.email;
+                    const email = user.email || 'No email';
+                    
+                    // Update username dan email di UI
                     document.getElementById('display-username').innerText = name;
                     document.getElementById('display-email').innerText = email;
-                    document.getElementById('profile-img').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`;
+                    
+                    // Cek apakah ada avatar yang sudah disimpan
+                    try {
+                        const { data: profile, error: profileError } = await supabaseClient
+                            .from('profiles')
+                            .select('avatar_url')
+                            .eq('id', user.id)
+                            .single();
+
+                        const profileImg = document.getElementById('profile-img');
+                        
+                        if (profile?.avatar_url && !profileError) {
+                            profileImg.src = profile.avatar_url;
+                        } else {
+                            // Fallback ke avatar otomatis jika belum ada foto
+                            profileImg.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=10B981&color=fff&bold=true`;
+                        }
+                    } catch (profileErr) {
+                        console.error('Error loading profile:', profileErr);
+                        // Gunakan default avatar jika ada error
+                        document.getElementById('profile-img').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=10B981&color=fff&bold=true`;
+                    }
 
                     // Show correct auth provider badge
                     const provider = user.app_metadata?.provider || 'email';
@@ -306,6 +416,9 @@
                             badge.innerHTML = '<i class="fa-solid fa-envelope text-sm mt-px"></i> Email Authenticated';
                         }
                     }
+                } else {
+                    console.error('Error getting user:', userError);
+                    showToast('Gagal memuat profil. Silakan refresh halaman.', 'error');
                 }
             }
         });
