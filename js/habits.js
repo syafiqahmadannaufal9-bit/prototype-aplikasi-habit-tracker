@@ -442,6 +442,9 @@ function attachHomeCardListeners(dateStr) {
             }
             // Update red dots on date slider
             renderHomeDateRedDots();
+            // Update progress bar & check celebrations
+            if (typeof updateDailyProgress === 'function') updateDailyProgress();
+            if (typeof checkAllCompleted === 'function') checkAllCompleted();
         });
     });
 
@@ -473,6 +476,8 @@ function attachHomeCardListeners(dateStr) {
             saveTimerStates(ts);
             startHomeTimerTicks();
             renderHomeDateRedDots();
+            if (typeof updateDailyProgress === 'function') updateDailyProgress();
+            if (typeof checkAllCompleted === 'function') checkAllCompleted();
         });
     });
 
@@ -485,6 +490,7 @@ function attachHomeCardListeners(dateStr) {
             if (val > 0) val--;
             setNumericValue(id, date, val);
             renderHomeHabits();
+            if (typeof updateDailyProgress === 'function') updateDailyProgress();
         });
     });
     document.querySelectorAll('.numeric-plus').forEach(btn => {
@@ -495,6 +501,8 @@ function attachHomeCardListeners(dateStr) {
             val++;
             setNumericValue(id, date, val);
             renderHomeHabits();
+            if (typeof updateDailyProgress === 'function') updateDailyProgress();
+            if (typeof checkAllCompleted === 'function') checkAllCompleted();
         });
     });
     // Numeric direct input
