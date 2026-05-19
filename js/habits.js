@@ -307,11 +307,14 @@ function renderHomeHabits() {
     if (habits.length === 0) {
         container.innerHTML = `
             <div class="text-center py-12">
-                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fa-solid fa-plus text-gray-400 text-xl"></i>
+                <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5" style="background-color: var(--primary-light);">
+                    <i class="fa-solid fa-seedling text-2xl" style="color: var(--primary);"></i>
                 </div>
-                <p class="text-gray-500 text-sm font-medium">No habits yet</p>
-                <p class="text-gray-400 text-xs mt-1">Tap the + button to add your first habit</p>
+                <h3 class="text-lg font-bold text-gray-800 mb-1">Start Your Journey</h3>
+                <p class="text-gray-400 text-sm max-w-[220px] mx-auto">Plant your first habit seed and watch it grow into something amazing!</p>
+                <a href="add_habit.html" class="inline-flex items-center gap-2 mt-5 px-5 py-2.5 rounded-xl text-white text-sm font-bold shadow-md transform transition hover:-translate-y-0.5" style="background-color: var(--primary);">
+                    <i class="fa-solid fa-plus"></i> Create First Habit
+                </a>
             </div>`;
         return;
     }
@@ -442,6 +445,9 @@ function attachHomeCardListeners(dateStr) {
             }
             // Update red dots on date slider
             renderHomeDateRedDots();
+            // Update daily progress bar & check celebrations
+            if (typeof updateDailyProgress === 'function') updateDailyProgress();
+            if (typeof checkAllCompleted === 'function') checkAllCompleted();
         });
     });
 
@@ -473,6 +479,8 @@ function attachHomeCardListeners(dateStr) {
             saveTimerStates(ts);
             startHomeTimerTicks();
             renderHomeDateRedDots();
+            if (typeof updateDailyProgress === 'function') updateDailyProgress();
+            if (typeof checkAllCompleted === 'function') checkAllCompleted();
         });
     });
 
@@ -485,6 +493,7 @@ function attachHomeCardListeners(dateStr) {
             if (val > 0) val--;
             setNumericValue(id, date, val);
             renderHomeHabits();
+            if (typeof updateDailyProgress === 'function') updateDailyProgress();
         });
     });
     document.querySelectorAll('.numeric-plus').forEach(btn => {
@@ -495,6 +504,8 @@ function attachHomeCardListeners(dateStr) {
             val++;
             setNumericValue(id, date, val);
             renderHomeHabits();
+            if (typeof updateDailyProgress === 'function') updateDailyProgress();
+            if (typeof checkAllCompleted === 'function') checkAllCompleted();
         });
     });
     // Numeric direct input

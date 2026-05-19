@@ -10,6 +10,29 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <link rel="stylesheet" href="../css/tailwind.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Confetti celebration animation */
+        @keyframes confettiFall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        .confetti-piece {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            top: -10px;
+            z-index: 9999;
+            pointer-events: none;
+            animation: confettiFall 3s ease-in forwards;
+        }
+        @keyframes progressPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.3); }
+            50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        }
+        .progress-complete {
+            animation: progressPulse 2s ease-in-out 3;
+        }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script>
         tailwind.config = {
@@ -44,7 +67,7 @@
                         class="w-full h-full object-cover">
                 </a>
                 <div>
-                    <p class="text-[10px] font-bold text-white/80 uppercase tracking-wider shadow-sm"
+                    <p id="dashboard-greeting" class="text-[10px] font-bold text-white/80 uppercase tracking-wider shadow-sm"
                         style="text-shadow: 0 1px 2px rgba(0,0,0,0.1)">WELCOME BACK</p>
                     <div class="flex items-center gap-1">
                         <h1 id="dashboard-username" class="text-xl font-bold text-white leading-none shadow-sm"
@@ -55,10 +78,6 @@
                     </div>
                 </div>
             </div>
-            <button
-                class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/30 flex items-center justify-center hover:bg-white/30 transition shadow-sm">
-                <i class="fa-regular fa-bell"></i>
-            </button>
         </header>
 
         <!-- Account Status Hero (Glassmorphism) -->
@@ -130,10 +149,30 @@
             </div>
         </section>
 
+        <!-- Daily Progress Bar -->
+        <section class="px-6 mt-6 animate-slide-up delay-250">
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                <div class="flex justify-between items-center mb-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm" style="background-color: var(--primary-light); color: var(--primary);">
+                            <i class="fa-solid fa-bullseye"></i>
+                        </div>
+                        <span class="text-sm font-bold text-gray-900">Today's Progress</span>
+                    </div>
+                    <span id="progress-text" class="text-sm font-bold" style="color: var(--primary);">0%</span>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                    <div id="progress-bar" class="h-full rounded-full transition-all duration-700 ease-out" style="width: 0%; background-color: var(--primary);"></div>
+                </div>
+                <p id="progress-subtitle" class="text-xs text-gray-400 mt-2 font-medium">Complete your habits to fill the bar!</p>
+            </div>
+        </section>
+
         <!-- Habits List -->
         <section class="mt-4 px-6 animate-slide-up delay-300">
-            <div class="flex justify-between items-center mb-4">`
-                12 <h2 class="text-xl font-bold text-gray-900">Your Habits</h2> <button id="select-mode-btn"
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-900">Your Habits</h2>
+                <button id="select-mode-btn"
                     onclick="toggleSelectMode()"
                     class="text-sm font-semibold text-[var(--primary)] hover:underline focus:outline-none theme-text-update">Select
                     Multiple</button>
@@ -232,9 +271,99 @@
             }
         }
 
+        // Dynamic greeting based on time of day
+        function getDynamicGreeting() {
+            const hour = new Date().getHours();
+            if (hour >= 5 && hour < 12) return 'GOOD MORNING ☀️';
+            if (hour >= 12 && hour < 17) return 'GOOD AFTERNOON 🌤️';
+            if (hour >= 17 && hour < 21) return 'GOOD EVENING 🌅';
+            return 'GOOD NIGHT 🌙';
+        }
+
+        // Daily progress bar update
+        function updateDailyProgress() {
+            const habits = getHabits();
+            const today = new Date().toISOString().slice(0, 10);
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const progressSubtitle = document.getElementById('progress-subtitle');
+            
+            if (!progressBar || habits.length === 0) {
+                if (progressText) progressText.textContent = '0%';
+                if (progressBar) progressBar.style.width = '0%';
+                if (progressSubtitle) progressSubtitle.textContent = 'Add your first habit to start tracking!';
+                return;
+            }
+
+            const completed = habits.filter(h => isHabitCompleted(h.id, today)).length;
+            const percent = Math.round((completed / habits.length) * 100);
+            
+            progressBar.style.width = percent + '%';
+            progressText.textContent = percent + '%';
+            
+            if (percent === 100) {
+                progressSubtitle.textContent = '🎉 Perfect day! All habits completed!';
+                progressBar.classList.add('progress-complete');
+            } else if (percent >= 75) {
+                progressSubtitle.textContent = `Almost there! ${habits.length - completed} habit left to go!`;
+            } else if (percent >= 50) {
+                progressSubtitle.textContent = `Great progress! ${habits.length - completed} habits remaining.`;
+            } else if (completed > 0) {
+                progressSubtitle.textContent = `Keep going! ${completed} of ${habits.length} done.`;
+            } else {
+                progressSubtitle.textContent = 'Complete your habits to fill the bar!';
+            }
+        }
+
+        // Confetti celebration
+        let _confettiShown = false;
+        function triggerConfetti() {
+            if (_confettiShown) return;
+            _confettiShown = true;
+
+            const colors = ['#10B981', '#34D399', '#6EE7B7', '#FCD34D', '#F59E0B', '#EC4899', '#8B5CF6', '#3B82F6'];
+            const theme = document.documentElement.getAttribute('data-theme') || 'green';
+            if (theme === 'blue') {
+                colors[0] = '#5BA4C9'; colors[1] = '#7DD3FC'; colors[2] = '#BAE6FD';
+            }
+
+            for (let i = 0; i < 60; i++) {
+                const piece = document.createElement('div');
+                piece.className = 'confetti-piece';
+                piece.style.left = Math.random() * 100 + 'vw';
+                piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                piece.style.animationDelay = Math.random() * 1.5 + 's';
+                piece.style.animationDuration = (2 + Math.random() * 2) + 's';
+                const shapes = ['50%', '0%', '2px'];
+                piece.style.borderRadius = shapes[Math.floor(Math.random() * shapes.length)];
+                piece.style.width = (6 + Math.random() * 8) + 'px';
+                piece.style.height = (6 + Math.random() * 8) + 'px';
+                document.body.appendChild(piece);
+                setTimeout(() => piece.remove(), 5000);
+            }
+
+            // Reset after some time so it can trigger again if user unchecks/rechecks
+            setTimeout(() => { _confettiShown = false; }, 10000);
+        }
+
+        function checkAllCompleted() {
+            const habits = getHabits();
+            if (habits.length === 0) return;
+            const today = new Date().toISOString().slice(0, 10);
+            const allDone = habits.every(h => isHabitCompleted(h.id, today));
+            if (allDone) {
+                triggerConfetti();
+                showToast('🎉 Amazing! All habits completed today!');
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             // Set login date on first visit
             getLoginDate();
+
+            // Set dynamic greeting
+            const greetingEl = document.getElementById('dashboard-greeting');
+            if (greetingEl) greetingEl.textContent = getDynamicGreeting();
 
             // Load dynamic user info
             if (supabaseClient) {
@@ -254,6 +383,8 @@
             updateShadows(document.documentElement.getAttribute('data-theme') || 'green');
             // Red dots on date slider
             setTimeout(() => renderHomeDateRedDots(), 300);
+            // Update daily progress
+            updateDailyProgress();
 
             // Update Hero Status Card
             function updateHeroCard() {
