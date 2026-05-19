@@ -294,17 +294,14 @@ async function setupAuthListener() {
     handleRouteProtection(session);
 
     supabaseClient.auth.onAuthStateChange((event, session) => {
-        const currentPath = window.location.pathname.toLowerCase();
         if (event === 'PASSWORD_RECOVERY') {
+            const currentPath = window.location.pathname.toLowerCase();
             if (!currentPath.includes('reset_password.html') && !currentPath.includes('forgot_password.html')) {
                 window.location.href = 'forgot_password.html' + window.location.hash + window.location.search;
             }
         } else if (event === 'SIGNED_IN') {
             console.log('User signed in');
-            // Don't redirect away from recovery-related pages during password reset flow
-            if (!currentPath.includes('forgot_password.html') && !currentPath.includes('reset_password.html')) {
-                handleRouteProtection(session);
-            }
+            handleRouteProtection(session);
         } else if (event === 'SIGNED_OUT') {
             console.log('User signed out');
             handleRouteProtection(null);

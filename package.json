@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "dev": "npx -y serve@latest -l 3000"
+  },
   "dependencies": {
     "@tailwindcss/cli": "^4.2.2",
     "tailwindcss": "^4.2.2"
