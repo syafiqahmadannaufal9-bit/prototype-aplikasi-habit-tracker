@@ -44,6 +44,9 @@
                         },
                         blue: {
                             500: '#5BA4C9',
+                        },
+                        navy: {
+                            500: '#4A5FB3',
                         }
                     }
                 }
@@ -55,6 +58,7 @@
 <body class="font-sans h-screen flex flex-col relative overflow-hidden bg-white">
 
     <main class="flex-1 overflow-y-auto pb-24 relative z-10 no-scrollbar">
+<<<<<<< HEAD
         <!-- Deep immersive background gradient matching reference UI -->
         <div id="theme-bg-gradient"
             class="absolute top-0 left-0 right-0 h-[400px] z-0 pointer-events-none transition-all duration-700"></div>
@@ -75,6 +79,29 @@
                         <div class="text-white text-sm">
                             <i class="fa-solid fa-circle-check"></i>
                         </div>
+=======
+    <!-- Deep immersive background gradient matching reference UI -->
+    <div id="theme-bg-gradient" class="absolute top-0 left-0 right-0 h-[500px] z-0 pointer-events-none transition-all duration-700"></div>
+    
+    <!-- Decorative Sphere Elements -->
+    <div class="decorative-sphere sphere-large" style="top: -80px; right: -60px; opacity: 0.12;"></div>
+    <div class="decorative-sphere sphere-medium" style="top: 120px; left: -40px; opacity: 0.1; animation-delay: 2s;"></div>
+    <div class="decorative-sphere sphere-small" style="bottom: 300px; right: 20px; opacity: 0.08; animation-delay: 1s;"></div>
+    <div class="decorative-sphere sphere-large" style="bottom: 150px; left: -100px; opacity: 0.09; animation-delay: 3s;"></div>
+    
+    <!-- Header -->
+    <header class="px-6 pt-8 pb-4 flex justify-between items-center animate-slide-up relative z-20">
+        <div class="flex items-center gap-3">
+            <a href="profile.html" class="w-12 h-12 rounded-full overflow-hidden border-2 border-white/40 shadow-sm relative group block cursor-pointer transition transform hover:scale-105 active:scale-95">
+                <img id="dashboard-avatar" src="https://i.pravatar.cc/150?img=11" alt="Profile" class="w-full h-full object-cover">
+            </a>
+            <div>
+                <p class="text-[10px] font-bold text-white/80 uppercase tracking-wider shadow-sm" style="text-shadow: 0 1px 2px rgba(0,0,0,0.1)">WELCOME BACK</p>
+                <div class="flex items-center gap-1">
+                    <h1 id="dashboard-username" class="text-xl font-bold text-white leading-none shadow-sm" style="text-shadow: 0 1px 2px rgba(0,0,0,0.1)">Loading...</h1>
+                    <div class="text-white text-sm">
+                        <i class="fa-solid fa-circle-check"></i>
+>>>>>>> 0e2218d25b2800c75f838498a67822de5fa864c9
                     </div>
                 </div>
             </div>
@@ -178,10 +205,48 @@
                     Multiple</button>
             </div>
 
+<<<<<<< HEAD
             <div class="flex flex-col gap-4 mb-8" id="habit-list">
                 <!-- Dynamically populated by app.js from localStorage -->
             </div>
         </section>
+=======
+            <!-- Description -->
+            <p id="hero-status-desc" class="text-[13px] text-gray-700 font-medium leading-relaxed">
+                Curious researcher ready to build new habits with boundless enthusiasm. Let's make today count!
+            </p>
+        </div>
+    </section>
+
+    <!-- Date & Time Section -->
+    <section class="mt-8 animate-slide-up delay-200 w-full relative z-20" style="overflow: visible; background: linear-gradient(180deg, transparent 0%, var(--bg-color) 60%);">
+        <div class="px-6 flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-gray-900">Date & Time</h2>
+        </div>
+
+        <!-- Month Selector -->
+        <div class="flex items-center w-full overflow-x-auto no-scrollbar px-6 gap-6 mb-4 pb-1" id="mobile-month-selector">
+            <!-- Dynamically populated -->
+        </div>
+
+        <!-- Date Selector -->
+        <div class="flex w-full overflow-x-auto no-scrollbar px-6 gap-3 pb-4" id="mobile-date-selector" style="padding-top: 14px; overflow-y: visible;">
+            <!-- Dynamically populated -->
+        </div>
+    </section>
+
+    <!-- Habits List -->
+    <section class="mt-4 px-6 animate-slide-up delay-300">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-gray-900">Your Habits</h2>
+            <button id="select-mode-btn" onclick="toggleSelectMode()" class="text-sm font-semibold text-[var(--primary)] hover:underline focus:outline-none theme-text-update">Select Multiple</button>
+        </div>
+        
+        <div class="flex flex-col gap-4 mb-8" id="habit-list">
+            <!-- Dynamically populated by app.js from localStorage -->
+        </div>
+    </section>
+>>>>>>> 0e2218d25b2800c75f838498a67822de5fa864c9
     </main>
 
     <!-- Tab Bar -->
@@ -367,13 +432,35 @@
 
             // Load dynamic user info
             if (supabaseClient) {
-                const { data: { user } } = await supabaseClient.auth.getUser();
-                if (user) {
+                const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+                if (user && !userError) {
                     const name = user.user_metadata?.full_name || 'User';
                     const usernameEl = document.getElementById('dashboard-username');
                     const avatarEl = document.getElementById('dashboard-avatar');
+                    
                     if (usernameEl) usernameEl.textContent = name;
-                    if (avatarEl) avatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`;
+                    
+                    // Load avatar dari Supabase profiles table
+                    if (avatarEl) {
+                        try {
+                            const { data: profile, error: profileError } = await supabaseClient
+                                .from('profiles')
+                                .select('avatar_url')
+                                .eq('id', user.id)
+                                .single();
+
+                            if (profile?.avatar_url && !profileError) {
+                                avatarEl.src = profile.avatar_url;
+                            } else {
+                                // Fallback ke UI avatars jika belum ada foto
+                                avatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=10B981&color=fff&bold=true`;
+                            }
+                        } catch (err) {
+                            console.error('Error loading avatar:', err);
+                            // Gunakan default avatar jika ada error
+                            avatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=10B981&color=fff&bold=true`;
+                        }
+                    }
                 }
             }
 

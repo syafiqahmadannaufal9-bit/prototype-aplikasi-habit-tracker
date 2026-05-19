@@ -15,7 +15,8 @@
                 extend: {
                     colors: {
                         green: { 500: '#10B981', 600: '#059669' },
-                        blue: { 500: '#5BA4C9', 600: '#0284C7' }
+                        blue: { 500: '#5BA4C9', 600: '#0284C7' },
+                        navy: { 500: '#3B5998', 600: '#2B4078' }
                     }
                 }
             }
@@ -62,11 +63,17 @@
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <i class="fa-solid fa-lock text-gray-400"></i>
                     </div>
+<<<<<<< HEAD
                     <input type="password" id="password"
                         class="w-full pl-11 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:border-transparent theme-focus-ring transition"
                         placeholder="••••••••" required>
                     <button type="button" onclick="togglePasswordVisibility('password', 'eye-password')" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors">
                         <i id="eye-password" class="fa-regular fa-eye"></i>
+=======
+                    <input type="password" id="password" class="w-full pl-11 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:border-transparent theme-focus-ring transition" placeholder="••••••••" required>
+                    <button type="button" onclick="togglePasswordVisibility('password', 'password-toggle-icon')" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition">
+                        <i id="password-toggle-icon" class="fa-regular fa-eye"></i>
+>>>>>>> 0e2218d25b2800c75f838498a67822de5fa864c9
                     </button>
                 </div>
                 <div class="flex justify-end mt-2">
@@ -129,16 +136,44 @@
             });
         }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 0e2218d25b2800c75f838498a67822de5fa864c9
         function togglePasswordVisibility(inputId, iconId) {
             const input = document.getElementById(inputId);
             const icon = document.getElementById(iconId);
             if (input.type === 'password') {
                 input.type = 'text';
+<<<<<<< HEAD
                 icon.classList.replace('fa-eye', 'fa-eye-slash');
             } else {
                 input.type = 'password';
                 icon.classList.replace('fa-eye-slash', 'fa-eye');
+=======
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        async function handleForgotPassword(e) {
+            e.preventDefault();
+            const email = prompt("Enter your email address to receive a password reset link:");
+            if (!email || !email.trim()) return;
+            try {
+                const { error } = await supabaseClient.auth.resetPasswordForEmail(email.trim());
+                if (error) {
+                    showToast('Error: ' + error.message, 'error');
+                } else {
+                    showToast('Password reset link sent! Please check your email.', 'success');
+                }
+            } catch (err) {
+                showToast('Failed to send reset link. Please try again.', 'error');
+>>>>>>> 0e2218d25b2800c75f838498a67822de5fa864c9
             }
         }
 
