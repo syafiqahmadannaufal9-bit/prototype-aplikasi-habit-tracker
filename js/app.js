@@ -6,8 +6,8 @@ const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_U
 
 // Initialize theme
 function initTheme() {
-    // Default to green if not set
-    const savedTheme = localStorage.getItem('theme') || 'green';
+    // Default to light if not set
+    const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
     
     // Setup background gradient immediately
@@ -19,6 +19,7 @@ function initTheme() {
 
 // Global dynamic background gradient setup setup
 function setupBackgroundGradient(theme) {
+    if (window.location.pathname.includes('admin_dashboard.html')) return;
     let container = document.querySelector('main.flex-1.overflow-y-auto') || document.querySelector('main');
     if (!container) {
         container = document.body;
@@ -49,35 +50,28 @@ function setupBackgroundGradient(theme) {
 function updateGradientColor(theme) {
     const bgGradient = document.getElementById('theme-bg-gradient');
     if (bgGradient) {
-         if (theme === 'blue') {
-             bgGradient.style.background = 'linear-gradient(180deg, #4480ba 0%, #acc9e6 50%, rgba(255,255,255,0) 100%)'; 
-         } else if (theme === 'navy') {
-             bgGradient.style.background = 'linear-gradient(135deg, #1A2652 0%, #3D5A9F 25%, #5B7FBD 50%, #8AAFDB 75%, rgba(138, 175, 219, 0.2) 100%)';
+         if (theme === 'dark') {
+             bgGradient.style.background = 'linear-gradient(180deg, #064E3B 0%, #111827 50%, rgba(255,255,255,0) 100%)'; 
          } else {
              bgGradient.style.background = 'linear-gradient(180deg, #10B981 0%, #6ee7b7 50%, rgba(255,255,255,0) 100%)';
          }
     }
 }
 
-// Toggle theme between green, blue, and navy
+// Toggle theme between light and dark
 function toggleTheme() {
-    const currentTheme = document.documentElement.getAttribute('data-theme') || 'green';
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
     let newTheme;
     
-    if (currentTheme === 'green') {
-        newTheme = 'blue';
-    } else if (currentTheme === 'blue') {
-        newTheme = 'navy';
+    if (currentTheme === 'light') {
+        newTheme = 'dark';
     } else {
-        newTheme = 'green';
+        newTheme = 'light';
     }
     
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
-    
     updateGradientColor(newTheme);
-    
-    // Dispatch event
     document.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }));
 }
 
@@ -192,9 +186,9 @@ window.showToast = function(message, type = 'success') {
     const toast = document.createElement('div');
     const isError = type === 'error';
     
-    const theme = document.documentElement.getAttribute('data-theme') || 'green';
-    const isBlue = theme === 'blue';
-    const iconClass = isError ? 'fa-circle-exclamation text-red-500' : 'fa-circle-check ' + (isBlue ? 'text-[#5BA4C9]' : 'text-[#10B981]');
+    const theme = document.documentElement.getAttribute('data-theme') || 'light';
+    const isDark = theme === 'dark';
+    const iconClass = isError ? 'fa-circle-exclamation text-red-500' : 'fa-circle-check ' + (isDark ? 'text-[#34D399]' : 'text-[#10B981]');
     
     toast.className = 'bg-white shadow-[0_8px_24px_-4px_rgba(0,0,0,0.15)] rounded-2xl px-5 py-3.5 flex items-start gap-3.5 transform -translate-y-12 opacity-0 transition-all duration-400 cubic-bezier(0.16, 1, 0.3, 1) pointer-events-auto border border-gray-100 w-full animate-slide-down';
     
@@ -257,15 +251,15 @@ window.showConfirmModal = function(title, message, confirmText, confirmClass, on
         iconContainer.className = 'w-14 h-14 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-2xl mb-4 mx-auto';
         iconContainer.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
     } else {
-        const theme = document.documentElement.getAttribute('data-theme') || 'green';
-        const isBlue = theme === 'blue';
-        const bgCls = isBlue ? 'bg-blue-50 text-[#5BA4C9]' : 'bg-green-50 text-[#10B981]';
+        const theme = document.documentElement.getAttribute('data-theme') || 'light';
+        const isDark = theme === 'dark';
+        const bgCls = isDark ? 'bg-gray-800 text-[#34D399]' : 'bg-green-50 text-[#10B981]';
         iconContainer.className = `w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-4 mx-auto ${bgCls}`;
         iconContainer.innerHTML = '<i class="fa-solid fa-circle-question"></i>';
         
         if (!confirmClass.includes('bg-')) {
             confirmBtn.classList.add('theme-bg-update');
-            confirmBtn.style.backgroundColor = isBlue ? '#5BA4C9' : '#10B981';
+            confirmBtn.style.backgroundColor = '#10B981';
         }
     }
     
@@ -313,13 +307,25 @@ async function setupAuthListener() {
 function handleRouteProtection(session) {
     const currentPath = window.location.pathname.toLowerCase();
     const isPublicRoute = currentPath.includes('login.html') || currentPath.includes('register.html');
-    
-    if (!session && !isPublicRoute) {
+    const isAdminRoute = currentPath.includes('admin_dashboard.html');
+    const isAdmin = localStorage.getItem('isAdmin') === 'true';
+
+    if (isAdminRoute) {
+        if (!isAdmin) {
+            window.location.href = 'login.html';
+        }
+        return;
+    }
+
+    if (!session && !isPublicRoute && !isAdmin) {
         // Not logged in and on protected page -> redirect to login
         window.location.href = 'login.html';
     } else if (session && isPublicRoute) {
         // Logged in but on login/register page -> redirect to index
         window.location.href = 'index.html';
+    } else if (isAdmin && isPublicRoute) {
+        // Admin logged in but on login page
+        window.location.href = 'admin_dashboard.html';
     }
 }
 
@@ -332,6 +338,14 @@ async function handleEmailLogin(event) {
 
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
+
+    // Admin Bypass
+    if (email === 'admindasboard01@gmail.com' && password === 'lacdolacter0803') {
+        localStorage.setItem('isAdmin', 'true');
+        showToast('Admin login successful!');
+        setTimeout(() => window.location.href = 'admin_dashboard.html', 500);
+        return;
+    }
 
     const { data, error } = await supabaseClient.auth.signInWithPassword({
         email: email,
@@ -414,6 +428,7 @@ async function handleSignOut() {
             try {
                 document.body.style.opacity = '0';
                 document.body.style.transition = 'opacity 0.5s ease';
+                localStorage.removeItem('isAdmin');
                 await supabaseClient.auth.signOut();
                 window.location.href = 'login.html';
             } catch (error) {
@@ -469,12 +484,12 @@ function renderDynamicDateSlider() {
     document.addEventListener('themeChanged', (e) => {
         document.querySelectorAll('.theme-bg-update').forEach(el => {
             if(el.classList.contains('active')) {
-                el.style.backgroundColor = e.detail.theme === 'blue' ? '#5BA4C9' : '#10B981';
+                el.style.backgroundColor = '#10B981';
             }
         });
         const activeMonth = document.getElementById('active-month-btn');
         if (activeMonth) {
-            activeMonth.style.backgroundColor = e.detail.theme === 'blue' ? '#5BA4C9' : '#10B981';
+            activeMonth.style.backgroundColor = '#10B981';
         }
     });
 }
@@ -485,8 +500,8 @@ function renderDatesForMonth(year, monthIndex, activeDateToSet = null, scroll = 
     const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
     
     let dateHtml = '';
-    const theme = document.documentElement.getAttribute('data-theme') || 'green';
-    const primaryColor = theme === 'blue' ? '#5BA4C9' : '#10B981';
+    const theme = document.documentElement.getAttribute('data-theme') || 'light';
+    const primaryColor = '#10B981';
     
     let activeId = '';
     
@@ -563,8 +578,8 @@ function changeSliderMonth(monthIndex) {
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const monthContainer = document.getElementById('mobile-month-selector');
     let monthHtml = '';
-    const theme = document.documentElement.getAttribute('data-theme') || 'green';
-    const primaryColor = theme === 'blue' ? '#5BA4C9' : '#10B981';
+    const theme = document.documentElement.getAttribute('data-theme') || 'light';
+    const primaryColor = '#10B981';
     
     months.forEach((m, i) => {
         if (i === monthIndex) {
@@ -603,8 +618,8 @@ function selectSliderDate(el, dateNum) {
     });
     
     // Set active
-    const theme = document.documentElement.getAttribute('data-theme') || 'green';
-    const primaryColor = theme === 'blue' ? '#5BA4C9' : '#10B981';
+    const theme = document.documentElement.getAttribute('data-theme') || 'light';
+    const primaryColor = '#10B981';
     
     el.classList.add('active', 'theme-bg-update', 'shadow-md', 'text-white');
     el.classList.remove('bg-white', 'shadow-sm');

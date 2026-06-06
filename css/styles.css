@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-:root {
-  /* Default Green Theme */
+
+:root, [data-theme="light"] {
+  /* Default Light Theme */
   --primary: #10B981;
   --primary-light: #D1FAE5;
   --primary-dark: #059669;
@@ -9,33 +10,25 @@
   --text-main: #111827;
   --text-muted: #6B7280;
   --accent: #34D399;
+  --border-color: #E5E7EB;
 }
 
-[data-theme="blue"] {
-  /* Blue Theme */
-  --primary: #5BA4C9;
-  --primary-light: #E0F2FE;
-  --primary-dark: #0284C7;
-  --bg-color: #FAFAFA;
-  --card-bg: #FFFFFF;
-  --text-main: #111827;
-  --text-muted: #6B7280;
-  --accent: #7DD3FC;
+[data-theme="dark"] {
+  /* Dark Theme */
+  --primary: #10B981;
+  --primary-light: #064E3B;
+  --primary-dark: #34D399;
+  --bg-color: #111827;
+  --card-bg: #1F2937;
+  --text-main: #F9FAFB;
+  --text-muted: #9CA3AF;
+  --accent: #10B981;
+  --border-color: #374151;
+  --confirm-blue: #3B82F6;
 }
 
-[data-theme="navy"] {
-  /* Premium Blue Navy Theme - Updated */
-  --primary: #5B7FBD;
-  --primary-light: #DDE8F7;
-  --primary-dark: #3D5A9F;
-  --bg-color: #F8FAFB;
-  --card-bg: #FFFFFF;
-  --text-main: #1A2652;
-  --text-muted: #5A677F;
-  --accent: #7B9DD9;
-}
-
-html, body {
+html,
+body {
   font-family: 'Inter', sans-serif;
   background-color: var(--bg-color);
   color: var(--text-main);
@@ -48,23 +41,49 @@ html, body {
 
 /* Animations */
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-30px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes scaleIn {
-  from { transform: scale(0.9); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .animate-slide-up {
@@ -82,10 +101,21 @@ html, body {
 }
 
 /* Stagger delays */
-.delay-100 { animation-delay: 0.1s; }
-.delay-200 { animation-delay: 0.2s; }
-.delay-300 { animation-delay: 0.3s; }
-.delay-400 { animation-delay: 0.4s; }
+.delay-100 {
+  animation-delay: 0.1s;
+}
+
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.delay-300 {
+  animation-delay: 0.3s;
+}
+
+.delay-400 {
+  animation-delay: 0.4s;
+}
 
 /* Custom Shapes */
 .hero-card {
@@ -114,6 +144,7 @@ html, body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -133,27 +164,34 @@ html, body {
 .sphere-large {
   width: 200px;
   height: 200px;
-  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8), rgba(255,255,255,0.1));
-  box-shadow: inset -30px -30px 60px rgba(0,0,0,0.2);
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.1));
+  box-shadow: inset -30px -30px 60px rgba(0, 0, 0, 0.2);
 }
 
 .sphere-medium {
   width: 120px;
   height: 120px;
-  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.6), rgba(255,255,255,0.1));
-  box-shadow: inset -20px -20px 40px rgba(0,0,0,0.15);
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.1));
+  box-shadow: inset -20px -20px 40px rgba(0, 0, 0, 0.15);
 }
 
 .sphere-small {
   width: 80px;
   height: 80px;
-  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.5), rgba(255,255,255,0.05));
-  box-shadow: inset -15px -15px 30px rgba(0,0,0,0.1);
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.05));
+  box-shadow: inset -15px -15px 30px rgba(0, 0, 0, 0.1);
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-20px);
+  }
 }
 
 /* Day/Date Selector */
@@ -161,7 +199,8 @@ html, body {
   transition: all 0.3s ease;
   position: relative;
   overflow: visible !important;
-  isolation: isolate; /* ensure stacking context doesn't clip children */
+  isolation: isolate;
+  /* ensure stacking context doesn't clip children */
 }
 
 .date-card.active {
@@ -191,6 +230,7 @@ html, body {
   align-items: center;
   gap: 6px;
 }
+
 .cal-numeric-stepper button {
   width: 28px;
   height: 28px;
@@ -205,10 +245,12 @@ html, body {
   transition: background 0.2s, color 0.2s;
   flex-shrink: 0;
 }
+
 .cal-numeric-stepper button:hover {
   background: var(--primary);
   color: white;
 }
+
 .cal-numeric-circle {
   width: 40px;
   height: 40px;
@@ -220,6 +262,7 @@ html, body {
   transition: background 0.2s, color 0.2s;
   flex-shrink: 0;
 }
+
 .cal-numeric-circle input {
   width: 100%;
   height: 100%;
@@ -233,9 +276,11 @@ html, body {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
 .cal-numeric-circle.filled {
   background: var(--primary);
 }
+
 .cal-numeric-circle.filled input {
   color: white;
 }
@@ -287,12 +332,14 @@ html, body {
 
 .fab {
   background-color: var(--primary);
-  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4); /* Green shadow default */
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+  /* Green shadow default */
   transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.4s ease, box-shadow 0.4s ease;
 }
 
 [data-theme="blue"] .fab {
-  box-shadow: 0 8px 20px rgba(91, 164, 201, 0.4); /* Blue shadow */
+  box-shadow: 0 8px 20px rgba(91, 164, 201, 0.4);
+  /* Blue shadow */
 }
 
 .fab:hover {
@@ -341,7 +388,7 @@ input[type="number"].cal-num-input::-webkit-inner-spin-button {
   border: 2px solid #FAFAFA;
   z-index: 30;
   pointer-events: none;
-  box-shadow: 0 1px 4px rgba(239,68,68,0.4);
+  box-shadow: 0 1px 4px rgba(239, 68, 68, 0.4);
 }
 
 /* Modal Input Styling */
@@ -384,6 +431,7 @@ input[type="number"].cal-num-input::-webkit-inner-spin-button {
 #edit-username-cancel:active {
   transform: scale(0.98);
 }
+
 /* Theme Modal Styling */
 .theme-option {
   position: relative;
@@ -402,7 +450,6 @@ input[type="number"].cal-num-input::-webkit-inner-spin-button {
 }
 
 .theme-check-green,
-.theme-check-blue,
-.theme-check-navy {
+.theme-check-blue {
   animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }

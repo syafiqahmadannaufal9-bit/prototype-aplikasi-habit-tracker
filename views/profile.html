@@ -59,6 +59,20 @@
         </div>
     </section>
 
+    <!-- Achievements Section -->
+    <section class="px-6 mt-6 animate-slide-up delay-150">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 px-2 flex justify-between items-center">
+            <span>Achievements</span>
+            <span id="profile-achievements-count" class="text-[var(--primary)] theme-text-update">0/10</span>
+        </h3>
+        <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
+            <!-- max-h-[175px] allows exactly 2 rows of items (approx 80px each + 16px gap). Added overflow-y-auto for scrolling -->
+            <div class="grid grid-cols-4 sm:grid-cols-5 gap-y-5 gap-x-2 max-h-[175px] overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar" id="profile-achievements-grid">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    </section>
+
     <!-- Profile Updates List -->
     <section class="px-6 mt-6 animate-slide-up delay-200">
         <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 px-2">Account Options</h3>
@@ -77,7 +91,6 @@
                 </div>
                 <i class="fa-solid fa-chevron-right text-gray-300"></i>
             </button>
-
             <!-- Theme Toggle -->
             <button onclick="showThemeModal()" class="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 active:bg-gray-100 transition-all active:scale-[0.98] text-left group border-b border-gray-100">
                 <div class="flex items-center gap-4">
@@ -149,6 +162,7 @@
         </a>
     </nav>
 
+    <script src="../js/habits.js"></script>
     <script src="../js/app.js"></script>
     <script>
         let _currentUser = null;
@@ -192,20 +206,6 @@
                                     <i class="fa-solid fa-check ml-auto text-lg text-blue-500 theme-check-blue hidden"></i>
                                 </div>
                             </button>
-
-                            <!-- Navy Theme -->
-                            <button type="button" class="theme-option w-full p-4 rounded-2xl border-2 transition-all hover:scale-105 active:scale-95" data-theme="navy" style="border-color: #5B7FBD; background-color: rgba(91, 127, 189, 0.05);">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-12 h-12 rounded-full flex items-center justify-center text-white" style="background: linear-gradient(135deg, #3D5A9F 0%, #5B7FBD 100%);">
-                                        <i class="fa-solid fa-moon text-lg"></i>
-                                    </div>
-                                    <div class="text-left">
-                                        <h4 class="font-bold text-gray-900">Premium Navy</h4>
-                                        <p class="text-xs text-gray-500">Professional & Modern</p>
-                                    </div>
-                                    <i class="fa-solid fa-check ml-auto text-lg text-indigo-600 theme-check-navy hidden"></i>
-                                </div>
-                            </button>
                         </div>
 
                         <button type="button" class="w-full mt-6 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors" id="theme-modal-close">Done</button>
@@ -217,10 +217,9 @@
             const currentTheme = document.documentElement.getAttribute('data-theme') || 'green';
             
             // Update check marks
-            document.querySelectorAll('.theme-check-green, .theme-check-blue, .theme-check-navy').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.theme-check-green, .theme-check-blue').forEach(el => el.classList.add('hidden'));
             if (currentTheme === 'green') document.querySelector('.theme-check-green')?.classList.remove('hidden');
             else if (currentTheme === 'blue') document.querySelector('.theme-check-blue')?.classList.remove('hidden');
-            else if (currentTheme === 'navy') document.querySelector('.theme-check-navy')?.classList.remove('hidden');
 
             // Theme option handlers
             const themeOptions = document.querySelectorAll('.theme-option');
@@ -235,18 +234,15 @@
                     if (bgGradient) {
                         if (selectedTheme === 'blue') {
                             bgGradient.style.background = 'linear-gradient(180deg, #4480ba 0%, #acc9e6 50%, rgba(255,255,255,0) 100%)'; 
-                        } else if (selectedTheme === 'navy') {
-                            bgGradient.style.background = 'linear-gradient(135deg, #1A2652 0%, #3D5A9F 25%, #5B7FBD 50%, #8AAFDB 75%, rgba(138, 175, 219, 0.2) 100%)';
                         } else {
                             bgGradient.style.background = 'linear-gradient(180deg, #10B981 0%, #6ee7b7 50%, rgba(255,255,255,0) 100%)';
                         }
                     }
                     
                     // Update check marks
-                    document.querySelectorAll('.theme-check-green, .theme-check-blue, .theme-check-navy').forEach(el => el.classList.add('hidden'));
+                    document.querySelectorAll('.theme-check-green, .theme-check-blue').forEach(el => el.classList.add('hidden'));
                     if (selectedTheme === 'green') document.querySelector('.theme-check-green')?.classList.remove('hidden');
                     else if (selectedTheme === 'blue') document.querySelector('.theme-check-blue')?.classList.remove('hidden');
-                    else if (selectedTheme === 'navy') document.querySelector('.theme-check-navy')?.classList.remove('hidden');
                     
                     // Dispatch event
                     document.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: selectedTheme } }));
@@ -266,9 +262,7 @@
             modal.classList.remove('opacity-0', 'pointer-events-none');
             document.getElementById('theme-modal-box').classList.remove('scale-95');
             document.getElementById('theme-modal-box').classList.add('scale-100');
-        }
-
-        // === Edit Username Modal System ===
+        }        // === Edit Username Modal System ===
         function showEditUsernameModal(currentUsername) {
             let modal = document.getElementById('edit-username-modal');
             if (!modal) {
@@ -277,7 +271,7 @@
                 modal.className = 'fixed inset-0 bg-gray-900/40 z-[120] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 px-6 backdrop-blur-sm';
                 modal.innerHTML = `
                     <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300 popup-content" id="edit-username-box">
-                        <div class="w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-4 mx-auto" id="edit-username-icon" style="background-color: rgba(91, 164, 201, 0.1); color: #5BA4C9;">
+                        <div class="w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-4 mx-auto" id="edit-username-icon" style="background-color: rgba(16, 185, 129, 0.1); color: #10B981;">
                             <i class="fa-solid fa-id-badge"></i>
                         </div>
                         <h3 class="text-xl font-bold text-gray-900 text-center mb-2">Edit Username</h3>
@@ -294,19 +288,8 @@
                 document.body.appendChild(modal);
             }
             
-            // Set input value and theme color
             const inputEl = document.getElementById('edit-username-input');
             inputEl.value = currentUsername;
-            
-            const theme = document.documentElement.getAttribute('data-theme') || 'green';
-            const iconContainer = document.getElementById('edit-username-icon');
-            if (theme === 'blue') {
-                iconContainer.style.backgroundColor = 'rgba(91, 164, 201, 0.1)';
-                iconContainer.style.color = '#5BA4C9';
-            } else {
-                iconContainer.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
-                iconContainer.style.color = '#10B981';
-            }
             
             const close = () => {
                 modal.classList.add('opacity-0', 'pointer-events-none');
@@ -536,7 +519,37 @@
                     showToast('Gagal memuat profil. Silakan refresh halaman.', 'error');
                 }
             }
+
+            renderAchievements();
         });
+
+        function renderAchievements() {
+            if (typeof getAchievementsData !== 'function') return;
+            const achData = getAchievementsData();
+            
+            const countEl = document.getElementById('profile-achievements-count');
+            if (countEl) countEl.innerText = `${achData.unlockedCount}/${achData.totalCount}`;
+            
+            const gridEl = document.getElementById('profile-achievements-grid');
+            if (!gridEl) return;
+            
+            let html = '';
+            achData.achievements.forEach(ach => {
+                const opacity = ach.isUnlocked ? 'opacity-100 transform hover:scale-110' : 'opacity-40 grayscale';
+                const badgeColor = ach.isUnlocked ? 'bg-[var(--primary)]' : 'bg-gray-200';
+                
+                html += `
+                    <div class="flex flex-col items-center justify-start gap-1.5 ${opacity} transition-all cursor-pointer" title="${ach.name}: ${ach.description}">
+                        <div class="w-12 h-12 rounded-full ${badgeColor} theme-bg-update flex items-center justify-center border-2 border-white shadow-sm overflow-hidden">
+                            <!-- Blank image placeholder as requested -->
+                            <img src="https://placehold.co/100x100/e2e8f0/e2e8f0.png" alt="Badge" class="w-full h-full object-cover mix-blend-multiply">
+                        </div>
+                        <span class="text-[9px] font-bold text-center text-gray-600 leading-tight line-clamp-2">${ach.name}</span>
+                    </div>
+                `;
+            });
+            gridEl.innerHTML = html;
+        }
     </script>
 </body>
 </html>

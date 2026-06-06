@@ -64,22 +64,24 @@
     </header>
 
     <!-- Account Status Hero (Glassmorphism) -->
-    <section class="px-6 py-4 animate-slide-up delay-100 relative group z-10 w-full max-w-[400px] mx-auto">
-        <div class="relative w-full rounded-3xl bg-white/40 backdrop-blur-xl border border-white/60 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.05)] overflow-visible">
+    <section class="px-6 py-4 animate-slide-up delay-100 relative group z-10 w-full max-w-[400px] mx-auto" style="perspective: 1000px;">
+        <div id="hero-card" class="relative w-full rounded-3xl bg-white border border-gray-100 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.05)] overflow-hidden transition-transform duration-300 ease-out" style="transform-style: preserve-3d;">
+            <!-- Glare Effect -->
+            <div id="hero-card-glare" class="absolute inset-0 rounded-3xl pointer-events-none opacity-0 transition-opacity duration-300" style="background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.8), transparent 60%); z-index: 50; mix-blend-mode: overlay;"></div>
             <!-- Header Row -->
-            <div class="flex items-center justify-between mb-3 text-white/90">
+            <div class="flex items-center justify-between mb-3 text-[var(--primary)] theme-text-update">
                 <div class="text-[10px] font-bold tracking-widest uppercase flex items-center gap-1.5 opacity-90">
-                    <span class="w-0.5 h-3 bg-white rounded-full"></span> 
+                    <span class="w-0.5 h-3 bg-[var(--primary)] theme-bg-update rounded-full"></span> 
                     ACCOUNT STATUS
                 </div>
-                <div class="text-white/80">
+                <button onclick="openAchievementsModal()" class="text-gray-400 hover:text-gray-600 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
                     <i class="fa-solid fa-ellipsis"></i>
-                </div>
+                </button>
             </div>
 
             <!-- Title & Rating -->
             <div class="mb-4">
-                <h2 id="hero-status-title" class="text-3xl font-black text-white tracking-tight drop-shadow-md">
+                <h2 id="hero-status-title" class="text-3xl font-black text-[var(--primary)] theme-text-update tracking-tight">
                     ROOKIE
                 </h2>
                 <div class="flex gap-1 text-yellow-400 text-sm mt-1 drop-shadow-sm" id="hero-rating-stars">
@@ -91,15 +93,27 @@
                 </div>
             </div>
 
-            <!-- Badges -->
-            <div class="flex gap-2 mb-4">
-                <div class="bg-white/60 backdrop-blur-md rounded-full px-3 py-1 flex items-center gap-1.5 shadow-sm text-xs font-bold text-gray-800 border border-white/50">
-                    <i class="fa-solid fa-fire text-orange-500"></i>
-                    <span id="hero-streak-badge">0 Streak</span>
+            <!-- Badges & Achievements -->
+            <div class="flex flex-col gap-3 mb-4">
+                <div class="flex gap-2">
+                    <div class="bg-gray-50 rounded-full px-3 py-1 flex items-center gap-1.5 shadow-sm text-xs font-bold text-gray-800 border border-gray-100">
+                        <i class="fa-solid fa-fire text-orange-500"></i>
+                        <span id="hero-streak-badge">0 Streak</span>
+                    </div>
+                    <div class="bg-gray-50 rounded-full px-3 py-1 flex items-center gap-1.5 shadow-sm text-xs font-bold text-gray-800 border border-gray-100">
+                        <i class="fa-solid fa-bullseye text-blue-500"></i>
+                        <span id="hero-consistency-badge">0% Today</span>
+                    </div>
                 </div>
-                <div class="bg-white/60 backdrop-blur-md rounded-full px-3 py-1 flex items-center gap-1.5 shadow-sm text-xs font-bold text-gray-800 border border-white/50">
-                    <i class="fa-solid fa-bullseye text-blue-500"></i>
-                    <span id="hero-consistency-badge">0% Today</span>
+                <!-- Achievements Progress -->
+                <div class="w-full mt-1">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <span class="text-[10px] font-bold text-[var(--primary)] theme-text-update uppercase tracking-wide">Achievements Progress</span>
+                        <span id="hero-achievements-count" class="text-[10px] font-bold text-[var(--primary)] theme-text-update">0/10</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden shadow-inner">
+                        <div id="hero-achievements-progress" class="bg-[var(--primary)] theme-bg-update h-1.5 rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+                    </div>
                 </div>
             </div>
 
@@ -186,6 +200,21 @@
             <div class="flex gap-3">
                 <button onclick="closeDeleteModal()" class="flex-1 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors">Cancel</button>
                 <button onclick="executeDeletion()" class="flex-1 py-3.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl shadow-[0_4px_14px_0_rgba(239,68,68,0.39)] transition-colors">Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Achievements Bottom Sheet Modal (Hidden by default) -->
+    <div id="achievements-modal" class="fixed inset-0 bg-gray-900/40 z-[70] flex items-end justify-center opacity-0 pointer-events-none transition-opacity duration-300 backdrop-blur-sm" onclick="closeAchievementsModal(event)">
+        <div class="bg-white rounded-t-3xl p-6 w-full max-w-md shadow-2xl transform translate-y-full transition-transform duration-300 popup-content" onclick="event.stopPropagation()">
+            <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-5 cursor-pointer" onclick="closeAchievementsModal()"></div>
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900">All Achievements</h3>
+                <span id="modal-achievements-count" class="text-sm font-bold text-[var(--primary)] theme-text-update px-3 py-1 bg-gray-100 rounded-full">0/10</span>
+            </div>
+            
+            <div class="overflow-y-auto max-h-[60vh] no-scrollbar pb-6 space-y-3" id="modal-achievements-list">
+                <!-- Dynamically populated list -->
             </div>
         </div>
     </div>
@@ -298,6 +327,15 @@
                 if (title) title.textContent = level;
                 if (desc) desc.textContent = description;
                 if (starsContainer) starsContainer.innerHTML = starsHTML;
+
+                // Update achievements progress
+                if (typeof getAchievementsData === 'function') {
+                    const achData = getAchievementsData();
+                    const countEl = document.getElementById('hero-achievements-count');
+                    const progressEl = document.getElementById('hero-achievements-progress');
+                    if (countEl) countEl.textContent = `${achData.unlockedCount}/${achData.totalCount}`;
+                    if (progressEl) progressEl.style.width = `${(achData.unlockedCount / achData.totalCount) * 100}%`;
+                }
             }
             
             updateHeroCard();
@@ -313,6 +351,142 @@
         document.addEventListener('monthChanged', () => {
             renderHomeDateRedDots();
         });
+
+        // Modal Logic for Achievements
+        function openAchievementsModal() {
+            const modal = document.getElementById('achievements-modal');
+            if (modal) {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                const content = modal.querySelector('.popup-content');
+                if (content) {
+                    content.classList.remove('translate-y-full');
+                    content.classList.add('translate-y-0');
+                }
+                renderModalAchievements();
+            }
+        }
+
+        function closeAchievementsModal(e) {
+            const modal = document.getElementById('achievements-modal');
+            if (modal) {
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                const content = modal.querySelector('.popup-content');
+                if (content) {
+                    content.classList.remove('translate-y-0');
+                    content.classList.add('translate-y-full');
+                }
+            }
+        }
+
+        function renderModalAchievements() {
+            if (typeof getAchievementsData !== 'function') return;
+            const achData = getAchievementsData();
+            
+            const countEl = document.getElementById('modal-achievements-count');
+            if (countEl) countEl.innerText = `${achData.unlockedCount}/${achData.totalCount}`;
+            
+            const listEl = document.getElementById('modal-achievements-list');
+            if (!listEl) return;
+            
+            let html = '';
+            achData.achievements.forEach(ach => {
+                const opacity = ach.isUnlocked ? 'opacity-100' : 'opacity-60 grayscale';
+                const badgeColor = ach.isUnlocked ? 'bg-[var(--primary)]' : 'bg-gray-200';
+                const textColor = ach.isUnlocked ? 'text-gray-900' : 'text-gray-500';
+                const progressPercent = Math.min((ach.progress / ach.target) * 100, 100);
+                
+                html += `
+                    <div class="flex items-center gap-4 p-3 rounded-2xl border border-gray-100 bg-gray-50/50 ${opacity} transition-all">
+                        <div class="w-14 h-14 rounded-full ${badgeColor} theme-bg-update flex items-center justify-center border-2 border-white shadow-sm overflow-hidden flex-shrink-0">
+                            <img src="https://placehold.co/100x100/e2e8f0/e2e8f0.png" alt="Badge" class="w-full h-full object-cover mix-blend-multiply">
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-bold ${textColor}">${ach.name}</h4>
+                            <p class="text-xs font-medium text-gray-500 mt-0.5 mb-2">${ach.description}</p>
+                            <!-- Achievement Progress Bar -->
+                            <div class="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                <div class="bg-[var(--primary)] theme-bg-update h-1.5 rounded-full transition-all duration-1000" style="width: ${progressPercent}%"></div>
+                            </div>
+                            <div class="text-[9px] font-bold text-gray-400 mt-1 text-right">${ach.progress} / ${ach.target}</div>
+                        </div>
+                        ${ach.isUnlocked ? '<div class="flex-shrink-0 ml-1"><i class="fa-solid fa-circle-check text-[var(--primary)] theme-text-update text-xl drop-shadow-sm"></i></div>' : ''}
+                    </div>
+                `;
+            });
+            listEl.innerHTML = html;
+        }
+
+        // 3D Tilt & Glare Effect for Hero Card
+        const heroCard = document.getElementById('hero-card');
+        const heroSection = heroCard ? heroCard.parentElement : null;
+        const heroGlare = document.getElementById('hero-card-glare');
+        
+        if (heroSection && heroCard) {
+            // Apply effect on mousemove
+            heroSection.addEventListener('mousemove', (e) => {
+                const rect = heroSection.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                // Calculate rotation based on cursor position (max 8 degrees tilt)
+                const rotateX = ((y - centerY) / centerY) * -8;
+                const rotateY = ((x - centerX) / centerX) * 8;
+                
+                heroCard.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+                
+                // Update glare position
+                if (heroGlare) {
+                    heroGlare.style.opacity = '1';
+                    heroGlare.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(255,255,255,0.4), transparent 50%)`;
+                }
+            });
+            
+            // Reset effect when mouse leaves
+            heroSection.addEventListener('mouseleave', () => {
+                heroCard.style.transform = `rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+                if (heroGlare) {
+                    heroGlare.style.opacity = '0';
+                }
+            });
+            
+            // For mobile touch devices
+            let touchTimeout;
+            heroSection.addEventListener('touchmove', (e) => {
+                if(e.touches.length > 0) {
+                    const touch = e.touches[0];
+                    const rect = heroSection.getBoundingClientRect();
+                    const x = touch.clientX - rect.left;
+                    const y = touch.clientY - rect.top;
+                    
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    
+                    // Slightly less rotation for touch
+                    const rotateX = ((y - centerY) / centerY) * -5;
+                    const rotateY = ((x - centerX) / centerX) * 5;
+                    
+                    heroCard.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+                    
+                    if (heroGlare) {
+                        heroGlare.style.opacity = '1';
+                        heroGlare.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(255,255,255,0.4), transparent 50%)`;
+                    }
+                }
+            });
+            
+            heroSection.addEventListener('touchend', () => {
+                clearTimeout(touchTimeout);
+                touchTimeout = setTimeout(() => {
+                    heroCard.style.transform = `rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+                    if (heroGlare) {
+                        heroGlare.style.opacity = '0';
+                    }
+                }, 150);
+            });
+        }
     </script>
 </body>
 </html>

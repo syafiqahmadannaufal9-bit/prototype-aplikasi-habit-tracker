@@ -598,9 +598,9 @@ function renderCalendarHabits(dateStr) {
 
     const habits = getHabits();
     const completions = getCompletions();
-    const theme = document.documentElement.getAttribute('data-theme') || 'green';
-    const primaryColor = theme === 'blue' ? '#5BA4C9' : '#10B981';
-    const lightColor = theme === 'blue' ? '#E0F2FE' : '#D1FAE5';
+    const theme = document.documentElement.getAttribute('data-theme') || 'light';
+    const primaryColor = '#10B981';
+    const lightColor = theme === 'dark' ? '#064E3B' : '#D1FAE5';
 
     if (habits.length === 0) {
         container.innerHTML = `
@@ -903,3 +903,39 @@ window.toggleHabitSelection = toggleHabitSelection;
 window.confirmDeletion = confirmDeletion;
 window.closeDeleteModal = closeDeleteModal;
 window.executeDeletion = executeDeletion;
+
+// =============================================
+// ACHIEVEMENTS LOGIC
+// =============================================
+function getAchievementsData() {
+    const habits = getHabits();
+    const completions = getCompletions();
+    const stats = getStatsData('daily');
+    
+    let totalCompletions = 0;
+    for (const date in completions) {
+        totalCompletions += Object.keys(completions[date]).length;
+    }
+    
+    const achievements = [
+        { id: 1, name: 'First Step', description: 'Create your first habit', isUnlocked: habits.length >= 1, progress: Math.min(habits.length, 1), target: 1 },
+        { id: 2, name: 'Getting Started', description: 'Complete a habit for the first time', isUnlocked: totalCompletions >= 1, progress: Math.min(totalCompletions, 1), target: 1 },
+        { id: 3, name: 'Three\'s a Charm', description: 'Reach a 3-day streak', isUnlocked: stats.longestStreak >= 3, progress: Math.min(stats.longestStreak, 3), target: 3 },
+        { id: 4, name: 'Habit Builder', description: 'Create 5 habits', isUnlocked: habits.length >= 5, progress: Math.min(habits.length, 5), target: 5 },
+        { id: 5, name: 'One Week Strong', description: 'Reach a 7-day streak', isUnlocked: stats.longestStreak >= 7, progress: Math.min(stats.longestStreak, 7), target: 7 },
+        { id: 6, name: 'Consistency', description: 'Complete habits 10 times in total', isUnlocked: totalCompletions >= 10, progress: Math.min(totalCompletions, 10), target: 10 },
+        { id: 7, name: 'Dedicated', description: 'Reach a 14-day streak', isUnlocked: stats.longestStreak >= 14, progress: Math.min(stats.longestStreak, 14), target: 14 },
+        { id: 8, name: 'Half Century', description: 'Complete habits 50 times in total', isUnlocked: totalCompletions >= 50, progress: Math.min(totalCompletions, 50), target: 50 },
+        { id: 9, name: 'True Master', description: 'Reach a 30-day streak', isUnlocked: stats.longestStreak >= 30, progress: Math.min(stats.longestStreak, 30), target: 30 },
+        { id: 10, name: 'Century Club', description: 'Complete habits 100 times in total', isUnlocked: totalCompletions >= 100, progress: Math.min(totalCompletions, 100), target: 100 }
+    ];
+    
+    const unlockedCount = achievements.filter(a => a.isUnlocked).length;
+    
+    return {
+        achievements,
+        unlockedCount,
+        totalCount: achievements.length
+    };
+}
+window.getAchievementsData = getAchievementsData;
