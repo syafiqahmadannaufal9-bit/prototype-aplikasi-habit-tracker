@@ -50,13 +50,13 @@ function validatePassword(password) {
         checks.minLength = true;
         score += 1;
     } else {
-        errors.push(`Minimal ${PasswordRules.MIN_LENGTH} karakter`);
+        errors.push(`Minimum ${PasswordRules.MIN_LENGTH} characters`);
     }
 
     // Check max length
     if (password.length > PasswordRules.MAX_LENGTH) {
         checks.maxLength = false;
-        errors.push(`Maksimal ${PasswordRules.MAX_LENGTH} karakter`);
+        errors.push(`Maximum ${PasswordRules.MAX_LENGTH} characters`);
     }
 
     // Check uppercase
@@ -64,7 +64,7 @@ function validatePassword(password) {
         checks.hasUppercase = true;
         score += 1;
     } else {
-        errors.push('Harus mengandung huruf besar (A-Z)');
+        errors.push('Must contain uppercase letter (A-Z)');
     }
 
     // Check lowercase
@@ -72,7 +72,7 @@ function validatePassword(password) {
         checks.hasLowercase = true;
         score += 1;
     } else {
-        errors.push('Harus mengandung huruf kecil (a-z)');
+        errors.push('Must contain lowercase letter (a-z)');
     }
 
     // Check number
@@ -80,7 +80,7 @@ function validatePassword(password) {
         checks.hasNumber = true;
         score += 1;
     } else {
-        errors.push('Harus mengandung angka (0-9)');
+        errors.push('Must contain a number (0-9)');
     }
 
     // Check special character
@@ -88,20 +88,20 @@ function validatePassword(password) {
         checks.hasSpecial = true;
         score += 1;
     } else {
-        errors.push('Harus mengandung simbol (!@#$%^&*...)');
+        errors.push('Must contain a symbol (!@#$%^&*...)');
     }
 
     // Check for spaces
     if (/\s/.test(password)) {
         checks.noSpaces = false;
-        errors.push('Tidak boleh mengandung spasi');
+        errors.push('Must not contain spaces');
         score = Math.max(0, score - 1);
     }
 
     // Check blacklist
     if (PasswordRules.BLACKLIST.includes(password.toLowerCase())) {
         checks.notBlacklisted = false;
-        errors.push('Password terlalu umum, gunakan yang lebih unik');
+        errors.push('Password too common, use a more unique one');
         score = Math.max(0, score - 2);
     }
 
@@ -111,11 +111,11 @@ function validatePassword(password) {
 
     // Determine strength label
     let strength;
-    if (score <= 1) strength = 'Sangat Lemah';
-    else if (score <= 2) strength = 'Lemah';
-    else if (score <= 3) strength = 'Sedang';
-    else if (score <= 5) strength = 'Kuat';
-    else strength = 'Sangat Kuat';
+    if (score <= 1) strength = 'Very Weak';
+    else if (score <= 2) strength = 'Weak';
+    else if (score <= 3) strength = 'Medium';
+    else if (score <= 5) strength = 'Strong';
+    else strength = 'Very Strong';
 
     const isValid = checks.minLength && checks.maxLength && checks.hasUppercase &&
                     checks.hasLowercase && checks.hasNumber && checks.hasSpecial &&
@@ -184,7 +184,7 @@ function detectThreats(input) {
     // Check SQL injection patterns
     for (const pattern of SQL_INJECTION_PATTERNS) {
         if (pattern.test(input)) {
-            threats.push('Terdeteksi pola SQL injection');
+            threats.push('SQL injection pattern detected');
             break;
         }
     }
@@ -192,14 +192,14 @@ function detectThreats(input) {
     // Check XSS patterns
     for (const pattern of XSS_PATTERNS) {
         if (pattern.test(input)) {
-            threats.push('Terdeteksi pola XSS/script injection');
+            threats.push('XSS/script injection pattern detected');
             break;
         }
     }
 
     // Check for null bytes
     if (/\0/.test(input)) {
-        threats.push('Terdeteksi null byte injection');
+        threats.push('Null byte injection detected');
     }
 
     return { isSafe: threats.length === 0, threats };
@@ -330,7 +330,7 @@ class RateLimiter {
                 element.innerHTML = `
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-shield-halved text-red-500"></i>
-                        <span>Terlalu banyak percobaan. Coba lagi dalam <strong>${seconds}</strong> detik</span>
+                        <span>Too many attempts. Try again in <strong>${seconds}</strong> seconds</span>
                     </div>
                 `;
             }
@@ -347,7 +347,7 @@ class RateLimiter {
     getWarningMessage() {
         const left = this.maxAttempts - this.attempts;
         if (left <= 2 && left > 0) {
-            return `⚠️ Peringatan: Sisa ${left} percobaan sebelum akun dikunci sementara`;
+            return `⚠️ Warning: ${left} attempts left before account is temporarily locked`;
         }
         return '';
     }
@@ -412,7 +412,7 @@ function initPasswordStrengthUI(passwordInput, container) {
             
             <!-- Strength Label -->
             <div class="flex justify-between items-center mb-3">
-                <span id="pwd-strength-label" class="text-xs font-bold text-gray-400">Kekuatan Password</span>
+                <span id="pwd-strength-label" class="text-xs font-bold text-gray-400">Password Strength</span>
                 <span id="pwd-strength-value" class="text-xs font-bold text-gray-400"></span>
             </div>
             
@@ -420,27 +420,27 @@ function initPasswordStrengthUI(passwordInput, container) {
             <div class="space-y-1.5" id="pwd-rules-list">
                 <div class="flex items-center gap-2 text-xs" data-rule="minLength">
                     <i class="fa-solid fa-circle-xmark text-gray-300 w-4 text-center transition-colors duration-300" id="rule-icon-minLength"></i>
-                    <span class="text-gray-500" id="rule-text-minLength">Minimal 8 karakter</span>
+                    <span class="text-gray-500" id="rule-text-minLength">Minimum 8 characters</span>
                 </div>
                 <div class="flex items-center gap-2 text-xs" data-rule="hasUppercase">
                     <i class="fa-solid fa-circle-xmark text-gray-300 w-4 text-center transition-colors duration-300" id="rule-icon-hasUppercase"></i>
-                    <span class="text-gray-500" id="rule-text-hasUppercase">Huruf besar (A-Z)</span>
+                    <span class="text-gray-500" id="rule-text-hasUppercase">Uppercase letter (A-Z)</span>
                 </div>
                 <div class="flex items-center gap-2 text-xs" data-rule="hasLowercase">
                     <i class="fa-solid fa-circle-xmark text-gray-300 w-4 text-center transition-colors duration-300" id="rule-icon-hasLowercase"></i>
-                    <span class="text-gray-500" id="rule-text-hasLowercase">Huruf kecil (a-z)</span>
+                    <span class="text-gray-500" id="rule-text-hasLowercase">Lowercase letter (a-z)</span>
                 </div>
                 <div class="flex items-center gap-2 text-xs" data-rule="hasNumber">
                     <i class="fa-solid fa-circle-xmark text-gray-300 w-4 text-center transition-colors duration-300" id="rule-icon-hasNumber"></i>
-                    <span class="text-gray-500" id="rule-text-hasNumber">Angka (0-9)</span>
+                    <span class="text-gray-500" id="rule-text-hasNumber">Number (0-9)</span>
                 </div>
                 <div class="flex items-center gap-2 text-xs" data-rule="hasSpecial">
                     <i class="fa-solid fa-circle-xmark text-gray-300 w-4 text-center transition-colors duration-300" id="rule-icon-hasSpecial"></i>
-                    <span class="text-gray-500" id="rule-text-hasSpecial">Simbol (!@#$%^&*...)</span>
+                    <span class="text-gray-500" id="rule-text-hasSpecial">Symbol (!@#$%^&*...)</span>
                 </div>
                 <div class="flex items-center gap-2 text-xs" data-rule="noSpaces">
                     <i class="fa-solid fa-circle-xmark text-gray-300 w-4 text-center transition-colors duration-300" id="rule-icon-noSpaces"></i>
-                    <span class="text-gray-500" id="rule-text-noSpaces">Tidak mengandung spasi</span>
+                    <span class="text-gray-500" id="rule-text-noSpaces">No spaces</span>
                 </div>
             </div>
         </div>
@@ -477,11 +477,11 @@ function updateStrengthUI(result) {
 
     // Color mapping
     const colorMap = {
-        'Sangat Lemah': '#EF4444',
-        'Lemah': '#F97316',
-        'Sedang': '#EAB308',
-        'Kuat': '#22C55E',
-        'Sangat Kuat': '#10B981'
+        'Very Weak': '#EF4444',
+        'Weak': '#F97316',
+        'Medium': '#EAB308',
+        'Strong': '#22C55E',
+        'Very Strong': '#10B981'
     };
 
     bar.style.width = `${Math.max(percent, 5)}%`;

@@ -599,8 +599,8 @@ function renderCalendarHabits(dateStr) {
     const habits = getHabits();
     const completions = getCompletions();
     const theme = document.documentElement.getAttribute('data-theme') || 'light';
-    const primaryColor = '#10B981';
-    const lightColor = theme === 'dark' ? '#064E3B' : '#D1FAE5';
+    const primaryColor = theme === 'blue' ? '#5BA4C9' : '#10B981';
+    const lightColor = theme === 'dark' ? '#064E3B' : (theme === 'blue' ? '#E0F2FE' : '#D1FAE5');
 
     if (habits.length === 0) {
         container.innerHTML = `

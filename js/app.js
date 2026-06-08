@@ -52,6 +52,8 @@ function updateGradientColor(theme) {
     if (bgGradient) {
          if (theme === 'dark') {
              bgGradient.style.background = 'linear-gradient(180deg, #064E3B 0%, #111827 50%, rgba(255,255,255,0) 100%)'; 
+         } else if (theme === 'blue') {
+             bgGradient.style.background = 'linear-gradient(180deg, #4480ba 0%, #acc9e6 50%, rgba(255,255,255,0) 100%)';
          } else {
              bgGradient.style.background = 'linear-gradient(180deg, #10B981 0%, #6ee7b7 50%, rgba(255,255,255,0) 100%)';
          }
@@ -188,7 +190,7 @@ window.showToast = function(message, type = 'success') {
     
     const theme = document.documentElement.getAttribute('data-theme') || 'light';
     const isDark = theme === 'dark';
-    const iconClass = isError ? 'fa-circle-exclamation text-red-500' : 'fa-circle-check ' + (isDark ? 'text-[#34D399]' : 'text-[#10B981]');
+    const iconClass = isError ? 'fa-circle-exclamation text-red-500' : 'fa-circle-check ' + (isDark ? 'text-[#34D399]' : (theme === 'blue' ? 'text-[#5BA4C9]' : 'text-[#10B981]'));
     
     toast.className = 'bg-white shadow-[0_8px_24px_-4px_rgba(0,0,0,0.15)] rounded-2xl px-5 py-3.5 flex items-start gap-3.5 transform -translate-y-12 opacity-0 transition-all duration-400 cubic-bezier(0.16, 1, 0.3, 1) pointer-events-auto border border-gray-100 w-full animate-slide-down';
     
@@ -253,13 +255,14 @@ window.showConfirmModal = function(title, message, confirmText, confirmClass, on
     } else {
         const theme = document.documentElement.getAttribute('data-theme') || 'light';
         const isDark = theme === 'dark';
-        const bgCls = isDark ? 'bg-gray-800 text-[#34D399]' : 'bg-green-50 text-[#10B981]';
+        let bgCls = isDark ? 'bg-gray-800 text-[#34D399]' : 'bg-green-50 text-[#10B981]';
+        if (theme === 'blue') bgCls = 'bg-blue-50 text-[#5BA4C9]';
         iconContainer.className = `w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-4 mx-auto ${bgCls}`;
         iconContainer.innerHTML = '<i class="fa-solid fa-circle-question"></i>';
         
         if (!confirmClass.includes('bg-')) {
             confirmBtn.classList.add('theme-bg-update');
-            confirmBtn.style.backgroundColor = '#10B981';
+            confirmBtn.style.backgroundColor = theme === 'blue' ? '#5BA4C9' : '#10B981';
         }
     }
     
@@ -345,7 +348,7 @@ async function handleEmailLogin(event) {
                     btn.innerText = originalText;
                 });
             }
-            showToast('Akun terkunci sementara. Tunggu hingga countdown selesai.', 'error');
+            showToast('Account temporarily locked. Wait for countdown to finish.', 'error');
             return;
         }
     }
@@ -357,20 +360,20 @@ async function handleEmailLogin(event) {
     if (typeof sanitizeInput === 'function') {
         const emailCheck = sanitizeInput(emailRaw, 'Email');
         if (!emailCheck.isSafe) {
-            showToast('Input tidak valid: ' + emailCheck.threats.join(', '), 'error');
+            showToast('Invalid input: ' + emailCheck.threats.join(', '), 'error');
             return;
         }
 
         // Validate email format
         if (typeof isValidEmail === 'function' && !isValidEmail(emailRaw.trim())) {
-            showToast('Format email tidak valid.', 'error');
+            showToast('Invalid email format.', 'error');
             return;
         }
 
         // Check password for obvious injection attempts (but allow special chars for passwords)
         const pwdThreatCheck = detectThreats(passwordRaw);
         if (!pwdThreatCheck.isSafe) {
-            showToast('Input password mengandung karakter mencurigakan.', 'error');
+            showToast('Password input contains suspicious characters.', 'error');
             return;
         }
     }
@@ -405,7 +408,7 @@ async function handleEmailLogin(event) {
             const warningEl = document.getElementById('rate-limit-warning');
 
             if (result.isLocked) {
-                showToast('Terlalu banyak percobaan gagal. Akun dikunci 30 detik.', 'error');
+                showToast('Too many failed attempts. Account locked for 30 seconds.', 'error');
                 if (warningEl) {
                     loginRateLimiter.startCountdown(warningEl, () => {
                         btn.disabled = false;
@@ -414,7 +417,7 @@ async function handleEmailLogin(event) {
                 }
             } else {
                 const warningMsg = loginRateLimiter.getWarningMessage();
-                showToast("Login gagal: " + error.message + (warningMsg ? '\n' + warningMsg : ''), 'error');
+                showToast("Login failed: " + error.message + (warningMsg ? '\n' + warningMsg : ''), 'error');
             }
         } else {
             showToast("Login failed: " + error.message, 'error');
@@ -453,13 +456,13 @@ async function handleEmailRegister(event) {
         ];
 
         if (allThreats.length > 0) {
-            showToast('Input tidak valid: ' + allThreats.join(', '), 'error');
+            showToast('Invalid input: ' + allThreats.join(', '), 'error');
             return;
         }
 
         // Validate email format
         if (typeof isValidEmail === 'function' && !isValidEmail(emailRaw.trim())) {
-            showToast('Format email tidak valid.', 'error');
+            showToast('Invalid email format.', 'error');
             return;
         }
     }
@@ -468,14 +471,14 @@ async function handleEmailRegister(event) {
     if (typeof validatePassword === 'function') {
         const pwdResult = validatePassword(passwordRaw);
         if (!pwdResult.isValid) {
-            showToast('Password tidak memenuhi syarat keamanan:\n• ' + pwdResult.errors.join('\n• '), 'error');
+            showToast('Password does not meet security requirements:\n• ' + pwdResult.errors.join('\n• '), 'error');
             return;
         }
     }
 
     // === Confirm Password Match ===
     if (passwordRaw !== confirmPasswordRaw) {
-        showToast('Password dan konfirmasi password tidak cocok!', 'error');
+        showToast('Password and confirm password do not match!', 'error');
         return;
     }
 
@@ -499,13 +502,13 @@ async function handleEmailRegister(event) {
     });
 
     if (error) {
-        showToast("Registrasi gagal: " + error.message, 'error');
+        showToast("Registration failed: " + error.message, 'error');
         btn.innerText = originalText;
         btn.disabled = false;
     } else if (data.user && !data.session) {
         // Supabase returns user but no session when email already exists (repeated signup)
         // or when email confirmation is pending
-        showToast("Email ini sudah terdaftar. Silakan login atau gunakan 'Forgot Password'.", 'error');
+        showToast("This email is already registered. Please log in or use 'Forgot Password'.", 'error');
         btn.innerText = originalText;
         btn.disabled = false;
         setTimeout(() => window.location.href = 'login.html', 2000);
@@ -525,7 +528,7 @@ async function handleEmailRegister(event) {
                 console.error('Profile save error:', profileErr);
             }
         }
-        showToast('Akun berhasil dibuat! Silakan login.');
+        showToast('Account created successfully! Please log in.');
         btn.innerText = originalText;
         btn.disabled = false;
         window.location.href = 'login.html';
@@ -598,14 +601,16 @@ function renderDynamicDateSlider() {
     
     // Listen for theme change to update the dynamic element colors
     document.addEventListener('themeChanged', (e) => {
+        const currentTheme = e.detail.theme || document.documentElement.getAttribute('data-theme') || 'light';
+        const pColor = currentTheme === 'blue' ? '#5BA4C9' : '#10B981';
         document.querySelectorAll('.theme-bg-update').forEach(el => {
             if(el.classList.contains('active')) {
-                el.style.backgroundColor = '#10B981';
+                el.style.backgroundColor = pColor;
             }
         });
         const activeMonth = document.getElementById('active-month-btn');
         if (activeMonth) {
-            activeMonth.style.backgroundColor = '#10B981';
+            activeMonth.style.backgroundColor = pColor;
         }
     });
 }
@@ -617,7 +622,7 @@ function renderDatesForMonth(year, monthIndex, activeDateToSet = null, scroll = 
     
     let dateHtml = '';
     const theme = document.documentElement.getAttribute('data-theme') || 'light';
-    const primaryColor = '#10B981';
+    const primaryColor = theme === 'blue' ? '#5BA4C9' : '#10B981';
     
     let activeId = '';
     
@@ -695,7 +700,7 @@ function changeSliderMonth(monthIndex) {
     const monthContainer = document.getElementById('mobile-month-selector');
     let monthHtml = '';
     const theme = document.documentElement.getAttribute('data-theme') || 'light';
-    const primaryColor = '#10B981';
+    const primaryColor = theme === 'blue' ? '#5BA4C9' : '#10B981';
     
     months.forEach((m, i) => {
         if (i === monthIndex) {
@@ -735,7 +740,7 @@ function selectSliderDate(el, dateNum) {
     
     // Set active
     const theme = document.documentElement.getAttribute('data-theme') || 'light';
-    const primaryColor = '#10B981';
+    const primaryColor = theme === 'blue' ? '#5BA4C9' : '#10B981';
     
     el.classList.add('active', 'theme-bg-update', 'shadow-md', 'text-white');
     el.classList.remove('bg-white', 'shadow-sm');

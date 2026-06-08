@@ -390,20 +390,19 @@
 
         async function uploadAvatar(file) {
             if (!_currentUser) {
-                showToast('User tidak ditemukan. Silakan login kembali.', 'error');
+                showToast('User not found. Please login again.', 'error');
                 return;
             }
 
-            // Validasi tipe file
             const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
             if (!validTypes.includes(file.type)) {
-                showToast('Format file tidak didukung. Gunakan JPG, PNG, WEBP, atau GIF.', 'error');
+                showToast('Unsupported file format. Use JPG, PNG, WEBP, or GIF.', 'error');
                 return;
             }
 
-            // Validasi ukuran file (maks 2MB)
+            // Validate file size (max 2MB)
             if (file.size > 2 * 1024 * 1024) {
-                showToast('File terlalu besar. Maksimal 2MB.', 'error');
+                showToast('File too large. Maximum 2MB.', 'error');
                 return;
             }
 
@@ -438,17 +437,17 @@
                 // Tampilkan foto baru langsung di UI
                 profileImg.src = publicUrl;
 
-                // Simpan URL ke tabel profiles di Supabase
+                // Save URL to profiles table in Supabase
                 await supabaseClient
                     .from('profiles')
                     .update({ avatar_url: publicUrl })
                     .eq('id', _currentUser.id);
 
-                showToast('Foto profil berhasil diperbarui!', 'success');
+                showToast('Profile photo successfully updated!', 'success');
 
             } catch (err) {
                 console.error('Upload error:', err);
-                showToast('Gagal mengunggah foto. Silakan coba lagi.', 'error');
+                showToast('Failed to upload photo. Please try again.', 'error');
                 // Restore original image on error
                 profileImg.src = originalSrc;
             } finally {
@@ -516,7 +515,7 @@
                     }
                 } else {
                     console.error('Error getting user:', userError);
-                    showToast('Gagal memuat profil. Silakan refresh halaman.', 'error');
+                    showToast('Failed to load profile. Please refresh the page.', 'error');
                 }
             }
 

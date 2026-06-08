@@ -58,7 +58,7 @@
                 </div>
             </div>
         </div>
-        <button class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/30 flex items-center justify-center hover:bg-white/30 transition shadow-sm">
+        <button id="bell-notification-btn" onclick="openNotificationModal()" class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/30 flex items-center justify-center hover:bg-white/30 transition shadow-sm">
             <i class="fa-regular fa-bell"></i>
         </button>
     </header>
@@ -220,6 +220,7 @@
     </div>
     <script src="../js/habits.js"></script>
     <script src="../js/app.js"></script>
+    <script src="../js/notifications.js"></script>
     <script>
         // Update box shadow based on theme
         function updateShadows(theme) {
