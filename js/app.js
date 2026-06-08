@@ -333,18 +333,64 @@ async function handleEmailLogin(event) {
     event.preventDefault();
     const btn = event.target.querySelector('button[type="submit"]');
     const originalText = btn.innerText;
+
+    // === Rate Limit Check ===
+    if (typeof loginRateLimiter !== 'undefined') {
+        const lockStatus = loginRateLimiter.isLocked();
+        if (lockStatus.isLocked) {
+            const warningEl = document.getElementById('rate-limit-warning');
+            if (warningEl) {
+                loginRateLimiter.startCountdown(warningEl, () => {
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                });
+            }
+            showToast('Akun terkunci sementara. Tunggu hingga countdown selesai.', 'error');
+            return;
+        }
+    }
+
+    const emailRaw = document.getElementById('email').value;
+    const passwordRaw = document.getElementById('password').value;
+
+    // === Input Sanitization ===
+    if (typeof sanitizeInput === 'function') {
+        const emailCheck = sanitizeInput(emailRaw, 'Email');
+        if (!emailCheck.isSafe) {
+            showToast('Input tidak valid: ' + emailCheck.threats.join(', '), 'error');
+            return;
+        }
+
+        // Validate email format
+        if (typeof isValidEmail === 'function' && !isValidEmail(emailRaw.trim())) {
+            showToast('Format email tidak valid.', 'error');
+            return;
+        }
+
+        // Check password for obvious injection attempts (but allow special chars for passwords)
+        const pwdThreatCheck = detectThreats(passwordRaw);
+        if (!pwdThreatCheck.isSafe) {
+            showToast('Input password mengandung karakter mencurigakan.', 'error');
+            return;
+        }
+    }
+
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading...';
     btn.disabled = true;
 
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
+    const email = emailRaw.trim();
+    const password = passwordRaw;
 
-    // Admin Bypass
-    if (email === 'admindasboard01@gmail.com' && password === 'lacdolacter0803') {
-        localStorage.setItem('isAdmin', 'true');
-        showToast('Admin login successful!');
-        setTimeout(() => window.location.href = 'admin_dashboard.html', 500);
-        return;
+    // === Admin Bypass (Hash-based) ===
+    if (typeof verifyAdminCredentials === 'function') {
+        const isAdmin = await verifyAdminCredentials(email, password);
+        if (isAdmin) {
+            localStorage.setItem('isAdmin', 'true');
+            if (typeof loginRateLimiter !== 'undefined') loginRateLimiter.reset();
+            showToast('Admin login successful!');
+            setTimeout(() => window.location.href = 'admin_dashboard.html', 500);
+            return;
+        }
     }
 
     const { data, error } = await supabaseClient.auth.signInWithPassword({
@@ -353,9 +399,32 @@ async function handleEmailLogin(event) {
     });
 
     if (error) {
-        showToast("Login failed: " + error.message, 'error');
+        // === Record failed attempt for rate limiting ===
+        if (typeof loginRateLimiter !== 'undefined') {
+            const result = loginRateLimiter.recordFailedAttempt();
+            const warningEl = document.getElementById('rate-limit-warning');
+
+            if (result.isLocked) {
+                showToast('Terlalu banyak percobaan gagal. Akun dikunci 30 detik.', 'error');
+                if (warningEl) {
+                    loginRateLimiter.startCountdown(warningEl, () => {
+                        btn.disabled = false;
+                        btn.innerText = originalText;
+                    });
+                }
+            } else {
+                const warningMsg = loginRateLimiter.getWarningMessage();
+                showToast("Login gagal: " + error.message + (warningMsg ? '\n' + warningMsg : ''), 'error');
+            }
+        } else {
+            showToast("Login failed: " + error.message, 'error');
+        }
+
         btn.innerText = originalText;
         btn.disabled = false;
+    } else {
+        // Successful login — reset rate limiter
+        if (typeof loginRateLimiter !== 'undefined') loginRateLimiter.reset();
     }
 }
 
@@ -363,13 +432,60 @@ async function handleEmailRegister(event) {
     event.preventDefault();
     const btn = event.target.querySelector('button[type="submit"]');
     const originalText = btn.innerText;
+
+    const usernameRaw = document.getElementById('username').value;
+    const nameRaw = document.getElementById('name').value;
+    const emailRaw = document.getElementById('email').value;
+    const passwordRaw = document.getElementById('password').value;
+    const confirmPasswordEl = document.getElementById('confirm-password');
+    const confirmPasswordRaw = confirmPasswordEl ? confirmPasswordEl.value : passwordRaw;
+
+    // === Input Sanitization ===
+    if (typeof sanitizeInput === 'function') {
+        const usernameCheck = sanitizeInput(usernameRaw, 'Username');
+        const nameCheck = sanitizeInput(nameRaw, 'Nama');
+        const emailCheck = sanitizeInput(emailRaw, 'Email');
+
+        const allThreats = [
+            ...usernameCheck.threats,
+            ...nameCheck.threats,
+            ...emailCheck.threats
+        ];
+
+        if (allThreats.length > 0) {
+            showToast('Input tidak valid: ' + allThreats.join(', '), 'error');
+            return;
+        }
+
+        // Validate email format
+        if (typeof isValidEmail === 'function' && !isValidEmail(emailRaw.trim())) {
+            showToast('Format email tidak valid.', 'error');
+            return;
+        }
+    }
+
+    // === Password Strength Validation ===
+    if (typeof validatePassword === 'function') {
+        const pwdResult = validatePassword(passwordRaw);
+        if (!pwdResult.isValid) {
+            showToast('Password tidak memenuhi syarat keamanan:\n• ' + pwdResult.errors.join('\n• '), 'error');
+            return;
+        }
+    }
+
+    // === Confirm Password Match ===
+    if (passwordRaw !== confirmPasswordRaw) {
+        showToast('Password dan konfirmasi password tidak cocok!', 'error');
+        return;
+    }
+
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading...';
     btn.disabled = true;
 
-    const username = document.getElementById('username').value;
-    const name = document.getElementById('name').value;
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
+    const username = usernameRaw.trim();
+    const name = nameRaw.trim();
+    const email = emailRaw.trim();
+    const password = passwordRaw;
 
     const { data, error } = await supabaseClient.auth.signUp({
         email: email,
@@ -383,13 +499,13 @@ async function handleEmailRegister(event) {
     });
 
     if (error) {
-        showToast("Registration failed: " + error.message, 'error');
+        showToast("Registrasi gagal: " + error.message, 'error');
         btn.innerText = originalText;
         btn.disabled = false;
     } else if (data.user && !data.session) {
         // Supabase returns user but no session when email already exists (repeated signup)
         // or when email confirmation is pending
-        showToast("This email is already registered. Please log in instead, or use 'Forgot Password'.", 'error');
+        showToast("Email ini sudah terdaftar. Silakan login atau gunakan 'Forgot Password'.", 'error');
         btn.innerText = originalText;
         btn.disabled = false;
         setTimeout(() => window.location.href = 'login.html', 2000);
@@ -409,7 +525,7 @@ async function handleEmailRegister(event) {
                 console.error('Profile save error:', profileErr);
             }
         }
-        showToast('Account created successfully! You can now log in.');
+        showToast('Akun berhasil dibuat! Silakan login.');
         btn.innerText = originalText;
         btn.disabled = false;
         window.location.href = 'login.html';
