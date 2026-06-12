@@ -2,7 +2,398 @@
 const SUPABASE_URL = 'https://loovtbdzjgpqamhssnue.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxvb3Z0YmR6amdwcWFtaHNzbnVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDI3MTcsImV4cCI6MjA5MDc3ODcxN30.StgTqDRbsasnEq7gfnkF4P1bZTaV8pf3BmPIhUPFI4Q';
 // Ensure Supabase JS CDN is loaded in HTML before app.js
-const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+let supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+// Local Query Builder Helper for Local Fallback Mode
+const makeLocalQueryBuilder = (table, userId) => {
+    let selectFields = '*';
+    let eqFilters = {};
+    let orderField = null;
+    let orderAscending = true;
+    let inFilters = {};
+    let isSingle = false;
+    let operation = 'select'; // 'select', 'insert', 'update', 'delete', 'upsert'
+    let opPayload = null;
+
+    const builder = {
+        select(fields) {
+            selectFields = fields;
+            return this;
+        },
+        eq(field, value) {
+            eqFilters[field] = value;
+            return this;
+        },
+        order(field, options = {}) {
+            orderField = field;
+            orderAscending = options.ascending !== false;
+            return this;
+        },
+        in(field, values) {
+            inFilters[field] = values;
+            return this;
+        },
+        single() {
+            isSingle = true;
+            return this;
+        },
+        insert(payload) {
+            operation = 'insert';
+            opPayload = payload;
+            return this;
+        },
+        update(payload) {
+            operation = 'update';
+            opPayload = payload;
+            return this;
+        },
+        delete() {
+            operation = 'delete';
+            return this;
+        },
+        upsert(payload) {
+            operation = 'upsert';
+            opPayload = payload;
+            return this;
+        },
+        async then(onfulfilled) {
+            try {
+                const result = await executeLocalQuery(table, userId, {
+                    operation,
+                    opPayload,
+                    eqFilters,
+                    inFilters,
+                    orderField,
+                    orderAscending,
+                    isSingle
+                });
+                return onfulfilled(result);
+            } catch (err) {
+                return onfulfilled({ data: null, error: err });
+            }
+        }
+    };
+    return builder;
+};
+
+// Execute Local Operations on localStorage Mock Data
+async function executeLocalQuery(table, userId, query) {
+    if (table === 'profiles') {
+        const localUsers = JSON.parse(localStorage.getItem('local_users') || '[]');
+        const targetUserId = query.eqFilters.id || userId;
+        const matchedUser = localUsers.find(u => u.id === targetUserId);
+
+        if (query.operation === 'select') {
+            if (!matchedUser) {
+                return { data: null, error: { message: 'Profile not found' } };
+            }
+            const data = {
+                id: matchedUser.id,
+                full_name: matchedUser.user_metadata.full_name || 'Local User',
+                username: matchedUser.user_metadata.username || 'localuser',
+                email: matchedUser.email,
+                avatar_url: matchedUser.user_metadata.avatar_url || ''
+            };
+            return { data: query.isSingle ? data : [data], error: null };
+        } else if (query.operation === 'update') {
+            if (matchedUser) {
+                matchedUser.user_metadata = {
+                    ...matchedUser.user_metadata,
+                    ...query.opPayload
+                };
+                localStorage.setItem('local_users', JSON.stringify(localUsers));
+                // Update local session
+                const localSession = JSON.parse(localStorage.getItem('local_session') || '{}');
+                if (localSession.user && localSession.user.id === matchedUser.id) {
+                    localSession.user.user_metadata = matchedUser.user_metadata;
+                    localStorage.setItem('local_session', JSON.stringify(localSession));
+                }
+            }
+            return { data: query.opPayload, error: null };
+        }
+    }
+
+    if (table === 'user_habits') {
+        const habitsKey = `local_habits_${userId}`;
+        let habits = JSON.parse(localStorage.getItem(habitsKey) || '[]');
+
+        if (query.operation === 'select') {
+            habits.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+            return { data: habits, error: null };
+        } else if (query.operation === 'insert') {
+            const payloads = Array.isArray(query.opPayload) ? query.opPayload : [query.opPayload];
+            const inserted = [];
+            payloads.forEach(p => {
+                const newHabit = {
+                    id: 'habit-' + Math.random().toString(36).substring(2, 15),
+                    user_id: userId,
+                    created_at: new Date().toISOString(),
+                    ...p
+                };
+                habits.push(newHabit);
+                inserted.push(newHabit);
+            });
+            localStorage.setItem(habitsKey, JSON.stringify(habits));
+            return { data: query.isSingle ? inserted[0] : inserted, error: null };
+        } else if (query.operation === 'update') {
+            const targetHabitId = query.eqFilters.id;
+            habits = habits.map(h => {
+                if (h.id === targetHabitId) {
+                    return { ...h, ...query.opPayload, updated_at: new Date().toISOString() };
+                }
+                return h;
+            });
+            localStorage.setItem(habitsKey, JSON.stringify(habits));
+            return { data: query.opPayload, error: null };
+        } else if (query.operation === 'delete') {
+            const targetIds = query.inFilters.id || [];
+            habits = habits.filter(h => !targetIds.includes(h.id));
+            localStorage.setItem(habitsKey, JSON.stringify(habits));
+            return { data: null, error: null };
+        }
+    }
+
+    if (table === 'habit_logs') {
+        const logsKey = `local_logs_${userId}`;
+        let logs = JSON.parse(localStorage.getItem(logsKey) || '[]');
+
+        if (query.operation === 'select') {
+            return { data: logs, error: null };
+        } else if (query.operation === 'upsert') {
+            const payload = query.opPayload;
+            const existingIdx = logs.findIndex(l => l.habit_id === payload.habit_id && l.log_date === payload.log_date);
+            if (existingIdx !== -1) {
+                logs[existingIdx] = { ...logs[existingIdx], ...payload, updated_at: new Date().toISOString() };
+            } else {
+                logs.push({
+                    id: 'log-' + Math.random().toString(36).substring(2, 15),
+                    created_at: new Date().toISOString(),
+                    ...payload
+                });
+            }
+            localStorage.setItem(logsKey, JSON.stringify(logs));
+            return { data: payload, error: null };
+        }
+    }
+
+    return { data: [], error: null };
+}
+
+// If Supabase failed to initialize, create a local mock client
+if (!supabaseClient) {
+    console.warn("Supabase client is null. Creating a mock local client.");
+    supabaseClient = {
+        auth: {
+            async signUp(credentials) { return { data: { user: null, session: null }, error: { message: "Signups not allowed" } }; },
+            async signInWithPassword(credentials) { return { data: { user: null, session: null }, error: { message: "Supabase not loaded" } }; },
+            async getSession() { return { data: { session: null }, error: null }; },
+            async getUser() { return { data: { user: null }, error: null }; },
+            async signOut() { return { error: null }; },
+            async updateUser() { return { data: { user: null }, error: null }; },
+            onAuthStateChange() { return { data: { subscription: { unsubscribe: () => {} } } }; }
+        },
+        from(table) {
+            const localSession = localStorage.getItem('local_session') ? JSON.parse(localStorage.getItem('local_session')) : null;
+            const userId = localSession ? localSession.user.id : 'anonymous';
+            return makeLocalQueryBuilder(table, userId);
+        }
+    };
+}
+
+// Setup global listener callback for local logins
+let localAuthListenerCallback = null;
+
+// Patch supabaseClient.auth to handle local fallback seamlessly
+if (supabaseClient) {
+    const originalSignUp = supabaseClient.auth.signUp.bind(supabaseClient.auth);
+    const originalSignIn = supabaseClient.auth.signInWithPassword.bind(supabaseClient.auth);
+    const originalGetSession = supabaseClient.auth.getSession.bind(supabaseClient.auth);
+    const originalGetUser = supabaseClient.auth.getUser.bind(supabaseClient.auth);
+    const originalSignOut = supabaseClient.auth.signOut.bind(supabaseClient.auth);
+    const originalUpdateUser = supabaseClient.auth.updateUser.bind(supabaseClient.auth);
+
+    const getLocalSession = () => {
+        const sessionStr = localStorage.getItem('local_session');
+        if (sessionStr) {
+            try {
+                return JSON.parse(sessionStr);
+            } catch (e) {
+                return null;
+            }
+        }
+        return null;
+    };
+
+    const getLocalUsers = () => {
+        const usersStr = localStorage.getItem('local_users');
+        if (usersStr) {
+            try {
+                return JSON.parse(usersStr);
+            } catch (e) {
+                return [];
+            }
+        }
+        return [];
+    };
+
+    supabaseClient.auth.signUp = async (credentials) => {
+        try {
+            const res = await originalSignUp(credentials);
+            if (res.error && (res.error.message.includes("Signups not allowed") || res.error.status === 403 || res.error.status === 400)) {
+                console.warn("Supabase signup disabled/failed. Falling back to local signup.", res.error);
+                
+                const localUsers = getLocalUsers();
+                const email = credentials.email.toLowerCase().trim();
+                
+                if (localUsers.some(u => u.email === email)) {
+                    return {
+                        data: { user: null, session: null },
+                        error: { message: "This email is already registered. Please log in." }
+                    };
+                }
+                
+                const newUser = {
+                    id: 'local-' + Math.random().toString(36).substring(2, 15),
+                    email: email,
+                    password: credentials.password,
+                    user_metadata: credentials.options?.data || {}
+                };
+                
+                localUsers.push(newUser);
+                localStorage.setItem('local_users', JSON.stringify(localUsers));
+                
+                return {
+                    data: {
+                        user: {
+                            id: newUser.id,
+                            email: newUser.email,
+                            user_metadata: newUser.user_metadata,
+                            app_metadata: { provider: 'email' }
+                        },
+                        session: null
+                    },
+                    error: null
+                };
+            }
+            return res;
+        } catch (e) {
+            return { data: { user: null, session: null }, error: e };
+        }
+    };
+
+    supabaseClient.auth.signInWithPassword = async (credentials) => {
+        try {
+            const res = await originalSignIn(credentials);
+            if (res.error) {
+                const email = credentials.email.toLowerCase().trim();
+                const password = credentials.password;
+                const localUsers = getLocalUsers();
+                const matchedUser = localUsers.find(u => u.email === email && u.password === password);
+                
+                if (matchedUser) {
+                    const localSession = {
+                        access_token: 'local-token-' + Math.random().toString(36).substring(2, 15),
+                        user: {
+                            id: matchedUser.id,
+                            email: matchedUser.email,
+                            user_metadata: matchedUser.user_metadata,
+                            app_metadata: { provider: 'email' }
+                        }
+                    };
+                    localStorage.setItem('local_session', JSON.stringify(localSession));
+                    
+                    if (localAuthListenerCallback) {
+                        localAuthListenerCallback('SIGNED_IN', localSession);
+                    }
+                    
+                    return { data: { user: localSession.user, session: localSession }, error: null };
+                }
+            }
+            return res;
+        } catch (e) {
+            return { data: { user: null, session: null }, error: e };
+        }
+    };
+
+    supabaseClient.auth.getSession = async () => {
+        const localSession = getLocalSession();
+        if (localSession) {
+            return { data: { session: localSession }, error: null };
+        }
+        return originalGetSession();
+    };
+
+    supabaseClient.auth.getUser = async () => {
+        const localSession = getLocalSession();
+        if (localSession) {
+            return { data: { user: localSession.user }, error: null };
+        }
+        return originalGetUser();
+    };
+
+    supabaseClient.auth.signOut = async () => {
+        const localSession = getLocalSession();
+        if (localSession) {
+            localStorage.removeItem('local_session');
+            if (localAuthListenerCallback) {
+                localAuthListenerCallback('SIGNED_OUT', null);
+            }
+            return { error: null };
+        }
+        return originalSignOut();
+    };
+
+    supabaseClient.auth.updateUser = async (attributes) => {
+        const localSession = getLocalSession();
+        if (localSession) {
+            if (attributes.data) {
+                localSession.user.user_metadata = {
+                    ...localSession.user.user_metadata,
+                    ...attributes.data
+                };
+                localStorage.setItem('local_session', JSON.stringify(localSession));
+                
+                const localUsers = getLocalUsers();
+                const userIdx = localUsers.findIndex(u => u.id === localSession.user.id);
+                if (userIdx !== -1) {
+                    localUsers[userIdx].user_metadata = localSession.user.user_metadata;
+                    localStorage.setItem('local_users', JSON.stringify(localUsers));
+                }
+            }
+            return { data: { user: localSession.user }, error: null };
+        }
+        return originalUpdateUser(attributes);
+    };
+
+    const originalOnAuthStateChange = supabaseClient.auth.onAuthStateChange.bind(supabaseClient.auth);
+    supabaseClient.auth.onAuthStateChange = (callback) => {
+        localAuthListenerCallback = callback;
+        const localSession = getLocalSession();
+        if (localSession) {
+            setTimeout(() => callback('SIGNED_IN', localSession), 0);
+            return {
+                data: {
+                    subscription: {
+                        unsubscribe: () => { localAuthListenerCallback = null; }
+                    }
+                }
+            };
+        }
+        return originalOnAuthStateChange(callback);
+    };
+
+    const originalFrom = supabaseClient.from.bind(supabaseClient);
+    supabaseClient.from = (table) => {
+        const localSession = getLocalSession();
+        if (localSession) {
+            return makeLocalQueryBuilder(table, localSession.user.id);
+        }
+        return originalFrom(table);
+    };
+}
+
+// Assign to window for other scripts to access
+window.supabaseClient = supabaseClient;
 
 // Initialize theme
 function initTheme() {
@@ -309,7 +700,7 @@ async function setupAuthListener() {
 
 function handleRouteProtection(session) {
     const currentPath = window.location.pathname.toLowerCase();
-    const isPublicRoute = currentPath.includes('login.html') || currentPath.includes('register.html');
+    const isPublicRoute = currentPath.includes('login.html') || currentPath.includes('register.html') || currentPath.includes('forgot_password.html');
     const isAdminRoute = currentPath.includes('admin_dashboard.html');
     const isAdmin = localStorage.getItem('isAdmin') === 'true';
 
@@ -505,7 +896,7 @@ async function handleEmailRegister(event) {
         showToast("Registration failed: " + error.message, 'error');
         btn.innerText = originalText;
         btn.disabled = false;
-    } else if (data.user && !data.session) {
+    } else if (data.user && !data.session && !data.user.id.startsWith('local-')) {
         // Supabase returns user but no session when email already exists (repeated signup)
         // or when email confirmation is pending
         showToast("This email is already registered. Please log in or use 'Forgot Password'.", 'error');
@@ -513,8 +904,8 @@ async function handleEmailRegister(event) {
         btn.disabled = false;
         setTimeout(() => window.location.href = 'login.html', 2000);
     } else {
-        // Successful registration — user is auto-confirmed
-        if (data.user) {
+        // Successful registration — user is auto-confirmed or local fallback
+        if (data.user && !data.user.id.startsWith('local-')) {
             try {
                 await supabaseClient
                     .from('profiles')

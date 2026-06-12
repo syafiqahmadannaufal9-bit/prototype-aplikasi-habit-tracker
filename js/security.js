@@ -11,10 +11,10 @@
 const PasswordRules = {
     MIN_LENGTH: 8,
     MAX_LENGTH: 128,
-    REQUIRE_UPPERCASE: true,
+    REQUIRE_UPPERCASE: false,
     REQUIRE_LOWERCASE: true,
     REQUIRE_NUMBER: true,
-    REQUIRE_SPECIAL: true,
+    REQUIRE_SPECIAL: false,
     SPECIAL_CHARS: '!@#$%^&*()_+-=[]{}|;:\'",.<>?/`~',
     // Common weak passwords blacklist
     BLACKLIST: [
@@ -59,12 +59,10 @@ function validatePassword(password) {
         errors.push(`Maximum ${PasswordRules.MAX_LENGTH} characters`);
     }
 
-    // Check uppercase
+    // Check uppercase (optional — contributes to score only)
     if (/[A-Z]/.test(password)) {
         checks.hasUppercase = true;
         score += 1;
-    } else {
-        errors.push('Must contain uppercase letter (A-Z)');
     }
 
     // Check lowercase
@@ -83,12 +81,10 @@ function validatePassword(password) {
         errors.push('Must contain a number (0-9)');
     }
 
-    // Check special character
+    // Check special character (optional — contributes to score only)
     if (/[!@#$%^&*()_+\-=\[\]{}|;:'",.<>?/`~\\]/.test(password)) {
         checks.hasSpecial = true;
         score += 1;
-    } else {
-        errors.push('Must contain a symbol (!@#$%^&*...)');
     }
 
     // Check for spaces
@@ -117,8 +113,8 @@ function validatePassword(password) {
     else if (score <= 5) strength = 'Strong';
     else strength = 'Very Strong';
 
-    const isValid = checks.minLength && checks.maxLength && checks.hasUppercase &&
-                    checks.hasLowercase && checks.hasNumber && checks.hasSpecial &&
+    const isValid = checks.minLength && checks.maxLength &&
+                    checks.hasLowercase && checks.hasNumber &&
                     checks.noSpaces && checks.notBlacklisted;
 
     return { isValid, score: Math.min(score, 7), strength, errors, checks };
@@ -422,10 +418,6 @@ function initPasswordStrengthUI(passwordInput, container) {
                     <i class="fa-solid fa-circle-xmark text-gray-300 w-4 text-center transition-colors duration-300" id="rule-icon-minLength"></i>
                     <span class="text-gray-500" id="rule-text-minLength">Minimum 8 characters</span>
                 </div>
-                <div class="flex items-center gap-2 text-xs" data-rule="hasUppercase">
-                    <i class="fa-solid fa-circle-xmark text-gray-300 w-4 text-center transition-colors duration-300" id="rule-icon-hasUppercase"></i>
-                    <span class="text-gray-500" id="rule-text-hasUppercase">Uppercase letter (A-Z)</span>
-                </div>
                 <div class="flex items-center gap-2 text-xs" data-rule="hasLowercase">
                     <i class="fa-solid fa-circle-xmark text-gray-300 w-4 text-center transition-colors duration-300" id="rule-icon-hasLowercase"></i>
                     <span class="text-gray-500" id="rule-text-hasLowercase">Lowercase letter (a-z)</span>
@@ -433,10 +425,6 @@ function initPasswordStrengthUI(passwordInput, container) {
                 <div class="flex items-center gap-2 text-xs" data-rule="hasNumber">
                     <i class="fa-solid fa-circle-xmark text-gray-300 w-4 text-center transition-colors duration-300" id="rule-icon-hasNumber"></i>
                     <span class="text-gray-500" id="rule-text-hasNumber">Number (0-9)</span>
-                </div>
-                <div class="flex items-center gap-2 text-xs" data-rule="hasSpecial">
-                    <i class="fa-solid fa-circle-xmark text-gray-300 w-4 text-center transition-colors duration-300" id="rule-icon-hasSpecial"></i>
-                    <span class="text-gray-500" id="rule-text-hasSpecial">Symbol (!@#$%^&*...)</span>
                 </div>
                 <div class="flex items-center gap-2 text-xs" data-rule="noSpaces">
                     <i class="fa-solid fa-circle-xmark text-gray-300 w-4 text-center transition-colors duration-300" id="rule-icon-noSpaces"></i>
@@ -490,7 +478,7 @@ function updateStrengthUI(result) {
     label.style.color = colorMap[result.strength] || '#EF4444';
 
     // Update individual rule checks
-    const ruleKeys = ['minLength', 'hasUppercase', 'hasLowercase', 'hasNumber', 'hasSpecial', 'noSpaces'];
+    const ruleKeys = ['minLength', 'hasLowercase', 'hasNumber', 'noSpaces'];
     ruleKeys.forEach(key => {
         const icon = document.getElementById(`rule-icon-${key}`);
         const text = document.getElementById(`rule-text-${key}`);

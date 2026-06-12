@@ -61,7 +61,7 @@
                     </button>
                 </div>
                 <div class="flex justify-end mt-2">
-                    <a href="#" onclick="handleForgotPassword(event)" class="text-sm font-semibold text-[var(--primary)] hover:underline">Forgot Password?</a>
+                    <a href="forgot_password.html" class="text-sm font-semibold text-[var(--primary)] hover:underline">Forgot Password?</a>
                 </div>
             </div>
 
@@ -135,21 +135,7 @@
             }
         }
 
-        async function handleForgotPassword(e) {
-            e.preventDefault();
-            const email = prompt("Enter your email address to receive a password reset link:");
-            if (!email || !email.trim()) return;
-            try {
-                const { error } = await supabaseClient.auth.resetPasswordForEmail(email.trim());
-                if (error) {
-                    showToast('Error: ' + error.message, 'error');
-                } else {
-                    showToast('Password reset link sent! Please check your email.', 'success');
-                }
-            } catch (err) {
-                showToast('Failed to send reset link. Please try again.', 'error');
-            }
-        }
+
     </script>
 </body>
 </html>
