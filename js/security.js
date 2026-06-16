@@ -118,8 +118,8 @@ function validatePassword(password) {
     else strength = 'Very Strong';
 
     const isValid = checks.minLength && checks.maxLength && checks.hasUppercase &&
-                    checks.hasLowercase && checks.hasNumber && checks.hasSpecial &&
-                    checks.noSpaces && checks.notBlacklisted;
+        checks.hasLowercase && checks.hasNumber && checks.hasSpecial &&
+        checks.noSpaces && checks.notBlacklisted;
 
     return { isValid, score: Math.min(score, 7), strength, errors, checks };
 }
@@ -505,3 +505,78 @@ function updateStrengthUI(result) {
         }
     });
 }
+// ========================================================
+// CUSTOM CONFIGURATION FOR LARAGON DATABASE BYPASS
+// ========================================================
+
+/**
+ * Menggantikan fungsi register bawaan template agar langsung
+ * mengirimkan data ke Server Backend Node.js lokal (Laragon)
+ */
+async function handleEmailRegister(e) {
+    e.preventDefault(); // Mencegah reload halaman otomatis
+    e.stopImmediatePropagation(); // Menghentikan fungsi Supabase bawaan template agar tidak ikut berjalan
+
+    // 1. Ambil elemen input berdasarkan ID yang ada di register.html kamu
+    const usernameInput = document.getElementById('username');
+    const nameInput = document.getElementById('name');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirm-password');
+
+    const username = usernameInput.value;
+    const fullName = nameInput.value;
+    const email = emailInput.value;
+    const password = passwordInput.value;
+    const confirmPassword = confirmPasswordInput.value;
+
+    // 2. Validasi kecocokan password secara manual
+    if (password !== confirmPassword) {
+        alert("Password dan Confirm Password tidak cocok!");
+        return;
+    }
+
+    // 3. Jalankan Validasi Kompleks dari Fungsi Bawaan security.js
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+        alert("Password belum memenuhi syarat keamanan:\n- " + passwordValidation.errors.join("\n- "));
+        return;
+    }
+
+    // 4. Sanitasi Input untuk mencegah SQL Injection & XSS (Memanfaatkan fitur security.js)
+    const sanitizedUsername = sanitizeInput(username, 'Username').sanitized;
+    const sanitizedFullName = sanitizeInput(fullName, 'Full Name').sanitized;
+    const sanitizedEmail = sanitizeInput(email, 'Email').sanitized;
+
+    try {
+        console.log("Mengirim data registrasi ke Laragon via Node.js Express...");
+
+        // 5. Kirim data bersih ke server backend lokal port 3000
+        const response = await fetch('http://localhost:3000/api/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: sanitizedUsername,
+                fullName: sanitizedFullName,
+                email: sanitizedEmail,
+                password: password // Biarkan backend yang menangani hashing jika diperlukan, atau kirim plain text sesuai server.js kita sebelumnya
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert(result.message); // Menampilkan "Akun berhasil terdaftar ke database Laragon!"
+            window.location.href = 'login.html'; // Redirect ke halaman login
+        } else {
+            alert('Registrasi Gagal: ' + result.message);
+        }
+
+    } catch (error) {
+        console.error('Koneksi Error:', error);
+        alert('Tidak dapat terhubung ke database. Pastikan kamu sudah menjalankan "node server.js" di terminal VS Code.');
+    }
+}
+document.getElementById('register-form').addEventListener('submit', handleEmailRegister);
