@@ -7,7 +7,7 @@ const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_U
 // Initialize theme
 function initTheme() {
     const isAdminPage = window.location.pathname.toLowerCase().includes('admin_dashboard.html');
-    
+
     if (isAdminPage) {
         // Admin theme handling (defaults to dark)
         const savedTheme = localStorage.getItem('admin_theme') || 'dark';
@@ -33,11 +33,11 @@ function setupBackgroundGradient(theme) {
     if (!container) {
         container = document.body;
         // make sure body is relative so absolute positioning works if it's the scroll container
-        if(getComputedStyle(container).position === 'static') {
+        if (getComputedStyle(container).position === 'static') {
             container.style.position = 'relative';
         }
     }
-    
+
     // Check if it already exists
     let bgGradient = document.getElementById('theme-bg-gradient');
     if (!bgGradient) {
@@ -52,27 +52,27 @@ function setupBackgroundGradient(theme) {
             container.insertBefore(bgGradient, container.firstChild);
         }
     }
-    
+
     updateGradientColor(theme || document.documentElement.getAttribute('data-theme') || 'green');
 }
 
 function updateGradientColor(theme) {
     const bgGradient = document.getElementById('theme-bg-gradient');
     if (bgGradient) {
-         if (theme === 'dark') {
-             bgGradient.style.background = 'linear-gradient(180deg, #064E3B 0%, #111827 50%, rgba(255,255,255,0) 100%)'; 
-         } else if (theme === 'blue') {
-             bgGradient.style.background = 'linear-gradient(180deg, #4480ba 0%, #acc9e6 50%, rgba(255,255,255,0) 100%)';
-         } else {
-             bgGradient.style.background = 'linear-gradient(180deg, #10B981 0%, #6ee7b7 50%, rgba(255,255,255,0) 100%)';
-         }
+        if (theme === 'dark') {
+            bgGradient.style.background = 'linear-gradient(180deg, #064E3B 0%, #111827 50%, rgba(255,255,255,0) 100%)';
+        } else if (theme === 'blue') {
+            bgGradient.style.background = 'linear-gradient(180deg, #4480ba 0%, #acc9e6 50%, rgba(255,255,255,0) 100%)';
+        } else {
+            bgGradient.style.background = 'linear-gradient(180deg, #10B981 0%, #6ee7b7 50%, rgba(255,255,255,0) 100%)';
+        }
     }
 }
 
 // Toggle theme between light and dark
 function toggleTheme() {
     const isAdminPage = window.location.pathname.toLowerCase().includes('admin_dashboard.html');
-    
+
     if (isAdminPage) {
         const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -97,27 +97,27 @@ function toggleTheme() {
 // Ripple effect for interactive elements
 function createRipple(event) {
     const button = event.currentTarget;
-    
+
     const circle = document.createElement('span');
     const diameter = Math.max(button.clientWidth, button.clientHeight);
     const radius = diameter / 2;
-    
+
     circle.style.width = circle.style.height = `${diameter}px`;
-    
+
     // Get click coordinates relative to button
     const rect = button.getBoundingClientRect();
     circle.style.left = `${event.clientX - rect.left - radius}px`;
     circle.style.top = `${event.clientY - rect.top - radius}px`;
     circle.classList.add('ripple');
-    
+
     // Remove existing ripples
     const ripple = button.querySelector('.ripple');
     if (ripple) {
         ripple.remove();
     }
-    
+
     button.appendChild(circle);
-    
+
     // Clean up
     setTimeout(() => {
         circle.remove();
@@ -128,7 +128,7 @@ function createRipple(event) {
 function toggleHabit(btn) {
     const isChecked = btn.querySelector('.visible') !== null;
     const icon = btn.querySelector('i');
-    
+
     if (isChecked) {
         // Uncheck
         btn.classList.add('opacity-50');
@@ -141,7 +141,7 @@ function toggleHabit(btn) {
         btn.classList.add('bg-white', 'text-[var(--primary)]');
         icon.classList.remove('invisible');
         icon.classList.add('visible');
-        
+
         // Add popping animation
         btn.style.transform = 'scale(1.2)';
         setTimeout(() => {
@@ -153,7 +153,7 @@ function toggleHabit(btn) {
 function initApp() {
     initTheme();
     renderDynamicDateSlider();
-    
+
     // Add ripple effect for a satisfying click animation to all interactive elements
     const rippleButtons = document.querySelectorAll('.fab, .nav-item, .date-card, .check-btn, button, .account-btn, .cal-day');
     rippleButtons.forEach(btn => {
@@ -165,16 +165,16 @@ function initApp() {
         btn.addEventListener('mousedown', createRipple);
         // Also support touch
         btn.addEventListener('touchstart', (e) => {
-            if(e.touches.length > 0) {
+            if (e.touches.length > 0) {
                 // Mock a click event for the ripple
                 const touch = e.touches[0];
                 e.clientX = touch.clientX;
                 e.clientY = touch.clientY;
                 createRipple(e);
             }
-        }, {passive: true});
+        }, { passive: true });
     });
-    
+
     // Setup check buttons
     const checkBtns = document.querySelectorAll('.check-btn');
     checkBtns.forEach(btn => {
@@ -183,7 +183,7 @@ function initApp() {
             toggleHabit(btn);
         });
     });
-    
+
     // Setup Supabase Auth Listener
     if (supabaseClient) {
         setupAuthListener();
@@ -193,7 +193,7 @@ function initApp() {
 // initHeroSlider removed — Swiper.js handles the hero slider in index.html
 
 // === Custom Toast Notification System ===
-window.showToast = function(message, type = 'success') {
+window.showToast = function (message, type = 'success') {
     let container = document.getElementById('toast-container');
     if (!container) {
         container = document.createElement('div');
@@ -204,13 +204,13 @@ window.showToast = function(message, type = 'success') {
 
     const toast = document.createElement('div');
     const isError = type === 'error';
-    
+
     const theme = document.documentElement.getAttribute('data-theme') || 'light';
     const isDark = theme === 'dark';
     const iconClass = isError ? 'fa-circle-exclamation text-red-500' : 'fa-circle-check ' + (isDark ? 'text-[#34D399]' : (theme === 'blue' ? 'text-[#5BA4C9]' : 'text-[#10B981]'));
-    
+
     toast.className = 'bg-white shadow-[0_8px_24px_-4px_rgba(0,0,0,0.15)] rounded-2xl px-5 py-3.5 flex items-start gap-3.5 transform -translate-y-12 opacity-0 transition-all duration-400 cubic-bezier(0.16, 1, 0.3, 1) pointer-events-auto border border-gray-100 w-full animate-slide-down';
-    
+
     toast.innerHTML = `
         <div class="mt-0.5"><i class="fa-solid ${iconClass} text-xl shrink-0"></i></div>
         <p class="text-sm font-semibold text-gray-700 leading-snug flex-1">${message}</p>
@@ -218,7 +218,7 @@ window.showToast = function(message, type = 'success') {
     `;
 
     container.appendChild(toast);
-    
+
     requestAnimationFrame(() => {
         toast.style.transform = 'translateY(0)';
         toast.style.opacity = '1';
@@ -228,12 +228,12 @@ window.showToast = function(message, type = 'success') {
         if (!toast.isConnected) return;
         toast.style.transform = 'translateY(-12px) scale(0.95)';
         toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 400); 
-    }, 4000); 
+        setTimeout(() => toast.remove(), 400);
+    }, 4000);
 };
 
 // === Global Confirm Modal System ===
-window.showConfirmModal = function(title, message, confirmText, confirmClass, onConfirm, cancelText = 'Cancel') {
+window.showConfirmModal = function (title, message, confirmText, confirmClass, onConfirm, cancelText = 'Cancel') {
     let modal = document.getElementById('global-confirm-modal');
     if (!modal) {
         modal = document.createElement('div');
@@ -254,18 +254,18 @@ window.showConfirmModal = function(title, message, confirmText, confirmClass, on
         `;
         document.body.appendChild(modal);
     }
-    
+
     document.getElementById('g-confirm-title').textContent = title;
     document.getElementById('g-confirm-msg').textContent = message;
-    
+
     const iconContainer = document.getElementById('g-confirm-icon');
     const confirmBtn = document.getElementById('g-confirm-btn');
     const cancelBtn = document.getElementById('g-confirm-cancel');
-    
+
     cancelBtn.textContent = cancelText;
     confirmBtn.textContent = confirmText;
     confirmBtn.className = `flex-1 py-3.5 font-bold rounded-xl transition-colors text-white shadow-md focus:outline-none ${confirmClass}`;
-    
+
     if (confirmClass.includes('red')) {
         iconContainer.className = 'w-14 h-14 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-2xl mb-4 mx-auto';
         iconContainer.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
@@ -276,23 +276,23 @@ window.showConfirmModal = function(title, message, confirmText, confirmClass, on
         if (theme === 'blue') bgCls = 'bg-blue-50 text-[#5BA4C9]';
         iconContainer.className = `w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-4 mx-auto ${bgCls}`;
         iconContainer.innerHTML = '<i class="fa-solid fa-circle-question"></i>';
-        
+
         if (!confirmClass.includes('bg-')) {
             confirmBtn.classList.add('theme-bg-update');
             confirmBtn.style.backgroundColor = theme === 'blue' ? '#5BA4C9' : '#10B981';
         }
     }
-    
+
     modal.classList.remove('opacity-0', 'pointer-events-none');
     document.getElementById('g-confirm-box').classList.remove('scale-95');
     document.getElementById('g-confirm-box').classList.add('scale-100');
-    
+
     const close = () => {
         modal.classList.add('opacity-0', 'pointer-events-none');
         document.getElementById('g-confirm-box').classList.remove('scale-100');
         document.getElementById('g-confirm-box').classList.add('scale-95');
     };
-    
+
     cancelBtn.onclick = () => close();
     confirmBtn.onclick = () => {
         close();
@@ -330,6 +330,10 @@ function handleRouteProtection(session) {
     const isAdminRoute = currentPath.includes('admin_dashboard.html');
     const isAdmin = localStorage.getItem('isAdmin') === 'true';
 
+    // Cek login via MySQL/Node.js backend (tersimpan di localStorage)
+    const mysqlUser = localStorage.getItem('currentUser');
+    const isMysqlLoggedIn = !!mysqlUser;
+
     if (isAdminRoute) {
         if (!isAdmin) {
             window.location.href = 'login.html';
@@ -337,16 +341,20 @@ function handleRouteProtection(session) {
         return;
     }
 
-    if (!session && !isPublicRoute && !isAdmin) {
-        // Not logged in and on protected page -> redirect to intro (or login if already seen)
+    // Dianggap sudah login jika: ada Supabase session, ATAU ada data user MySQL, ATAU admin
+    const isLoggedIn = session || isMysqlLoggedIn || isAdmin;
+
+    if (!isLoggedIn && !isPublicRoute) {
+        // Belum login dan berada di halaman protected -> redirect ke login/intro
         const introSeen = localStorage.getItem('introSeen') === 'true';
         window.location.href = introSeen ? 'login.html' : 'intro.html';
-    } else if (session && isPublicRoute) {
-        // Logged in but on login/register/intro page -> redirect to index
-        window.location.href = 'index.html';
-    } else if (isAdmin && isPublicRoute) {
-        // Admin logged in but on login page
-        window.location.href = 'admin_dashboard.html';
+    } else if (isLoggedIn && isPublicRoute && !isAdminRoute) {
+        // Sudah login tapi masih di halaman publik -> redirect ke index
+        if (isAdmin) {
+            window.location.href = 'admin_dashboard.html';
+        } else {
+            window.location.href = 'index.html';
+        }
     }
 }
 
@@ -414,38 +422,49 @@ async function handleEmailLogin(event) {
         }
     }
 
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email: email,
-        password: password,
-    });
+    // === Login via Node.js + MySQL ===
+    try {
+        const response = await fetch('http://localhost:3000/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
 
-    if (error) {
-        // === Record failed attempt for rate limiting ===
-        if (typeof loginRateLimiter !== 'undefined') {
-            const result = loginRateLimiter.recordFailedAttempt();
-            const warningEl = document.getElementById('rate-limit-warning');
+        const result = await response.json();
 
-            if (result.isLocked) {
-                showToast('Too many failed attempts. Account locked for 30 seconds.', 'error');
-                if (warningEl) {
-                    loginRateLimiter.startCountdown(warningEl, () => {
-                        btn.disabled = false;
-                        btn.innerText = originalText;
-                    });
+        if (result.success) {
+            // Simpan data user ke localStorage
+            localStorage.setItem('currentUser', JSON.stringify(result.user));
+            if (typeof loginRateLimiter !== 'undefined') loginRateLimiter.reset();
+            showToast('Login berhasil! Selamat datang, ' + result.user.fullName + '!');
+            setTimeout(() => window.location.href = 'index.html', 800);
+        } else {
+            // === Record failed attempt for rate limiting ===
+            if (typeof loginRateLimiter !== 'undefined') {
+                const rateLimitResult = loginRateLimiter.recordFailedAttempt();
+                const warningEl = document.getElementById('rate-limit-warning');
+                if (rateLimitResult.isLocked) {
+                    showToast('Too many failed attempts. Account locked for 30 seconds.', 'error');
+                    if (warningEl) {
+                        loginRateLimiter.startCountdown(warningEl, () => {
+                            btn.disabled = false;
+                            btn.innerText = originalText;
+                        });
+                    }
+                } else {
+                    const warningMsg = loginRateLimiter.getWarningMessage();
+                    showToast('Login gagal: ' + result.message + (warningMsg ? '\n' + warningMsg : ''), 'error');
                 }
             } else {
-                const warningMsg = loginRateLimiter.getWarningMessage();
-                showToast("Login failed: " + error.message + (warningMsg ? '\n' + warningMsg : ''), 'error');
+                showToast('Login gagal: ' + result.message, 'error');
             }
-        } else {
-            showToast("Login failed: " + error.message, 'error');
+            btn.innerText = originalText;
+            btn.disabled = false;
         }
-
+    } catch (networkError) {
+        showToast('Tidak dapat terhubung ke server. Pastikan server berjalan.', 'error');
         btn.innerText = originalText;
         btn.disabled = false;
-    } else {
-        // Successful login — reset rate limiter
-        if (typeof loginRateLimiter !== 'undefined') loginRateLimiter.reset();
     }
 }
 
@@ -557,15 +576,16 @@ async function handleEmailRegister(event) {
 
 async function handleSignOut() {
     showConfirmModal(
-        'Log Out', 
-        'Are you sure you want to log out of your account?', 
-        'Log Out', 
-        'bg-red-500 hover:bg-red-600', 
+        'Log Out',
+        'Are you sure you want to log out of your account?',
+        'Log Out',
+        'bg-red-500 hover:bg-red-600',
         async () => {
             try {
                 document.body.style.opacity = '0';
                 document.body.style.transition = 'opacity 0.5s ease';
                 localStorage.removeItem('isAdmin');
+                localStorage.removeItem('currentUser');
                 await supabaseClient.auth.signOut();
                 window.location.href = 'login.html';
             } catch (error) {
@@ -581,17 +601,17 @@ async function handleSignOut() {
 function renderDynamicDateSlider() {
     const monthContainer = document.getElementById('mobile-month-selector');
     const dateContainer = document.getElementById('mobile-date-selector');
-    
+
     if (!monthContainer || !dateContainer) return;
-    
+
     const today = new Date();
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
     const currentDate = today.getDate();
-    
+
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const days = ['Sun', 'Mon', 'Tues', 'Wed', 'Thu', 'Fri', 'Sat'];
-    
+
     // Render Months
     let monthHtml = '';
     months.forEach((m, i) => {
@@ -602,7 +622,7 @@ function renderDynamicDateSlider() {
         }
     });
     monthContainer.innerHTML = monthHtml;
-    
+
     // Smooth scroll month container to active month
     setTimeout(() => {
         const activeMonthBtn = document.getElementById('active-month-btn');
@@ -616,13 +636,13 @@ function renderDynamicDateSlider() {
 
     // Render Dates for current month
     renderDatesForMonth(currentYear, currentMonth, currentDate, true);
-    
+
     // Listen for theme change to update the dynamic element colors
     document.addEventListener('themeChanged', (e) => {
         const currentTheme = e.detail.theme || document.documentElement.getAttribute('data-theme') || 'light';
         const pColor = currentTheme === 'blue' ? '#5BA4C9' : '#10B981';
         document.querySelectorAll('.theme-bg-update').forEach(el => {
-            if(el.classList.contains('active')) {
+            if (el.classList.contains('active')) {
                 el.style.backgroundColor = pColor;
             }
         });
@@ -637,21 +657,21 @@ function renderDatesForMonth(year, monthIndex, activeDateToSet = null, scroll = 
     const dateContainer = document.getElementById('mobile-date-selector');
     const days = ['Sun', 'Mon', 'Tues', 'Wed', 'Thu', 'Fri', 'Sat'];
     const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-    
+
     let dateHtml = '';
     const theme = document.documentElement.getAttribute('data-theme') || 'light';
     const primaryColor = theme === 'blue' ? '#5BA4C9' : '#10B981';
-    
+
     let activeId = '';
-    
+
     for (let i = 1; i <= daysInMonth; i++) {
         const d = new Date(year, monthIndex, i);
         const dayName = days[d.getDay()];
         const dateStr = d.toISOString().slice(0, 10);
-        
+
         let isActive = '';
         let style = '';
-        
+
         // Either set the specific active date, or default to the 1st if switching months
         if ((activeDateToSet && i === activeDateToSet) || (!activeDateToSet && i === 1)) {
             isActive = 'active theme-bg-update shadow-md text-white';
@@ -661,7 +681,7 @@ function renderDatesForMonth(year, monthIndex, activeDateToSet = null, scroll = 
             isActive = 'bg-white shadow-sm';
             style = `background-color: var(--card-bg);`;
         }
-        
+
         dateHtml += `
             <button id="slider-date-${i}" class="date-card ${isActive} min-w-[60px] h-[75px] rounded-2xl flex flex-col items-center justify-center shrink-0 focus:outline-none" style="${style}" data-date="${dateStr}" onclick="selectSliderDate(this, ${i})">
                 <span class="text-xl font-bold">${i}</span>
@@ -669,9 +689,9 @@ function renderDatesForMonth(year, monthIndex, activeDateToSet = null, scroll = 
             </button>
         `;
     }
-    
+
     dateContainer.innerHTML = dateHtml;
-    
+
     // Add ripple effect to new buttons
     const newCards = dateContainer.querySelectorAll('.date-card');
     newCards.forEach(btn => {
@@ -681,19 +701,19 @@ function renderDatesForMonth(year, monthIndex, activeDateToSet = null, scroll = 
         btn.style.overflow = 'visible';
         btn.addEventListener('mousedown', createRipple);
         btn.addEventListener('touchstart', (e) => {
-            if(e.touches.length > 0) {
+            if (e.touches.length > 0) {
                 const touch = e.touches[0];
                 e.clientX = touch.clientX;
                 e.clientY = touch.clientY;
                 createRipple(e);
             }
-        }, {passive: true});
+        }, { passive: true });
     });
-    
+
     if (scroll && activeId) {
         setTimeout(() => {
             const activeEl = document.getElementById(activeId);
-            if(activeEl) {
+            if (activeEl) {
                 dateContainer.scrollTo({
                     left: activeEl.offsetLeft - 24,
                     behavior: 'smooth'
@@ -707,19 +727,19 @@ function changeSliderMonth(monthIndex) {
     const today = new Date();
     // Assuming current year for simplicity
     const currentYear = today.getFullYear();
-    
+
     // If selecting current month, auto-select today, otherwise 1st
     const dateToSelect = (monthIndex === today.getMonth()) ? today.getDate() : 1;
-    
+
     renderDatesForMonth(currentYear, monthIndex, dateToSelect, true);
-    
+
     // Easy way to rebuild month slider
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const monthContainer = document.getElementById('mobile-month-selector');
     let monthHtml = '';
     const theme = document.documentElement.getAttribute('data-theme') || 'light';
     const primaryColor = theme === 'blue' ? '#5BA4C9' : '#10B981';
-    
+
     months.forEach((m, i) => {
         if (i === monthIndex) {
             monthHtml += `<button class="shrink-0 text-sm font-medium text-white px-4 py-1.5 rounded-full whitespace-nowrap shadow-md focus:outline-none theme-bg-update" id="active-month-btn" style="background-color: ${primaryColor}">${m}</button>`;
@@ -728,7 +748,7 @@ function changeSliderMonth(monthIndex) {
         }
     });
     monthContainer.innerHTML = monthHtml;
-    
+
     setTimeout(() => {
         const activeMonthBtn = document.getElementById('active-month-btn');
         if (activeMonthBtn) {
@@ -746,7 +766,7 @@ function changeSliderMonth(monthIndex) {
 function selectSliderDate(el, dateNum) {
     const container = document.getElementById('mobile-date-selector');
     const cards = container.querySelectorAll('.date-card');
-    
+
     // Reset all
     cards.forEach(card => {
         card.classList.remove('active', 'theme-bg-update', 'shadow-md', 'text-white');
@@ -755,11 +775,11 @@ function selectSliderDate(el, dateNum) {
         card.style.transform = 'none';
         card.style.color = 'var(--text-main)';
     });
-    
+
     // Set active
     const theme = document.documentElement.getAttribute('data-theme') || 'light';
     const primaryColor = theme === 'blue' ? '#5BA4C9' : '#10B981';
-    
+
     el.classList.add('active', 'theme-bg-update', 'shadow-md', 'text-white');
     el.classList.remove('bg-white', 'shadow-sm');
     el.style.backgroundColor = primaryColor;
