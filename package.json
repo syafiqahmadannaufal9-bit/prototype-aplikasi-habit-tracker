@@ -1,6 +1,10 @@
 {
   "dependencies": {
     "@tailwindcss/cli": "^4.2.2",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "mysql2": "^3.22.5",
     "tailwindcss": "^4.2.2"
   }
 }

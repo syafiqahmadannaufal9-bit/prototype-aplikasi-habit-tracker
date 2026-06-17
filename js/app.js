@@ -414,38 +414,49 @@ async function handleEmailLogin(event) {
         }
     }
 
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email: email,
-        password: password,
-    });
+    // === Login via Node.js + MySQL ===
+    try {
+        const response = await fetch('http://localhost:3000/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
 
-    if (error) {
-        // === Record failed attempt for rate limiting ===
-        if (typeof loginRateLimiter !== 'undefined') {
-            const result = loginRateLimiter.recordFailedAttempt();
-            const warningEl = document.getElementById('rate-limit-warning');
+        const result = await response.json();
 
-            if (result.isLocked) {
-                showToast('Too many failed attempts. Account locked for 30 seconds.', 'error');
-                if (warningEl) {
-                    loginRateLimiter.startCountdown(warningEl, () => {
-                        btn.disabled = false;
-                        btn.innerText = originalText;
-                    });
+        if (result.success) {
+            // Simpan data user ke localStorage
+            localStorage.setItem('currentUser', JSON.stringify(result.user));
+            if (typeof loginRateLimiter !== 'undefined') loginRateLimiter.reset();
+            showToast('Login berhasil! Selamat datang, ' + result.user.fullName + '!');
+            setTimeout(() => window.location.href = 'index.html', 800);
+        } else {
+            // === Record failed attempt for rate limiting ===
+            if (typeof loginRateLimiter !== 'undefined') {
+                const rateLimitResult = loginRateLimiter.recordFailedAttempt();
+                const warningEl = document.getElementById('rate-limit-warning');
+                if (rateLimitResult.isLocked) {
+                    showToast('Too many failed attempts. Account locked for 30 seconds.', 'error');
+                    if (warningEl) {
+                        loginRateLimiter.startCountdown(warningEl, () => {
+                            btn.disabled = false;
+                            btn.innerText = originalText;
+                        });
+                    }
+                } else {
+                    const warningMsg = loginRateLimiter.getWarningMessage();
+                    showToast('Login gagal: ' + result.message + (warningMsg ? '\n' + warningMsg : ''), 'error');
                 }
             } else {
-                const warningMsg = loginRateLimiter.getWarningMessage();
-                showToast("Login failed: " + error.message + (warningMsg ? '\n' + warningMsg : ''), 'error');
+                showToast('Login gagal: ' + result.message, 'error');
             }
-        } else {
-            showToast("Login failed: " + error.message, 'error');
+            btn.innerText = originalText;
+            btn.disabled = false;
         }
-
+    } catch (networkError) {
+        showToast('Tidak dapat terhubung ke server. Pastikan server berjalan.', 'error');
         btn.innerText = originalText;
         btn.disabled = false;
-    } else {
-        // Successful login — reset rate limiter
-        if (typeof loginRateLimiter !== 'undefined') loginRateLimiter.reset();
     }
 }
 
