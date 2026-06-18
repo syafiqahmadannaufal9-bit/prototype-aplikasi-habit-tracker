@@ -1,0 +1,386 @@
+let _currentUser = null;
+
+// === Theme Selector Modal ===
+function showThemeModal() {
+    let modal = document.getElementById('theme-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'theme-modal';
+        modal.className = 'fixed inset-0 bg-gray-900/40 z-[120] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 px-6 backdrop-blur-sm';
+        modal.innerHTML = `
+            <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300 popup-content" id="theme-modal-box">
+                <h3 class="text-xl font-bold text-gray-900 text-center mb-6">Choose Your Theme</h3>
+                
+                <div class="space-y-3">
+                    <!-- Green Theme -->
+                    <button type="button" class="theme-option w-full p-4 rounded-2xl border-2 transition-all hover:scale-105 active:scale-95" data-theme="green" style="border-color: #10B981; background-color: rgba(16, 185, 129, 0.05);">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center text-white" style="background: linear-gradient(135deg, #10B981 0%, #6ee7b7 100%);">
+                                <i class="fa-solid fa-leaf text-lg"></i>
+                            </div>
+                            <div class="text-left">
+                                <h4 class="font-bold text-gray-900">Fresh Green</h4>
+                                <p class="text-xs text-gray-500">Calm & Natural</p>
+                            </div>
+                            <i class="fa-solid fa-check ml-auto text-lg text-green-500 theme-check-green hidden"></i>
+                        </div>
+                    </button>
+
+                    <!-- Blue Theme -->
+                    <button type="button" class="theme-option w-full p-4 rounded-2xl border-2 transition-all hover:scale-105 active:scale-95" data-theme="blue" style="border-color: #5BA4C9; background-color: rgba(91, 164, 201, 0.05);">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center text-white" style="background: linear-gradient(135deg, #5BA4C9 0%, #7DD3FC 100%);">
+                                <i class="fa-solid fa-droplet text-lg"></i>
+                            </div>
+                            <div class="text-left">
+                                <h4 class="font-bold text-gray-900">Sky Blue</h4>
+                                <p class="text-xs text-gray-500">Light & Fresh</p>
+                            </div>
+                            <i class="fa-solid fa-check ml-auto text-lg text-blue-500 theme-check-blue hidden"></i>
+                        </div>
+                    </button>
+                </div>
+
+                <button type="button" class="w-full mt-6 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors" id="theme-modal-close">Done</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'green';
+    
+    // Update check marks
+    document.querySelectorAll('.theme-check-green, .theme-check-blue').forEach(el => el.classList.add('hidden'));
+    if (currentTheme === 'green') document.querySelector('.theme-check-green')?.classList.remove('hidden');
+    else if (currentTheme === 'blue') document.querySelector('.theme-check-blue')?.classList.remove('hidden');
+
+    // Theme option handlers
+    const themeOptions = document.querySelectorAll('.theme-option');
+    themeOptions.forEach(option => {
+        option.onclick = (e) => {
+            const selectedTheme = option.getAttribute('data-theme');
+            document.documentElement.setAttribute('data-theme', selectedTheme);
+            localStorage.setItem('theme', selectedTheme);
+            
+            // Update gradient
+            const bgGradient = document.getElementById('theme-bg-gradient');
+            if (bgGradient) {
+                if (selectedTheme === 'blue') {
+                    bgGradient.style.background = 'linear-gradient(180deg, #4480ba 0%, #acc9e6 50%, rgba(255,255,255,0) 100%)'; 
+                } else {
+                    bgGradient.style.background = 'linear-gradient(180deg, #10B981 0%, #6ee7b7 50%, rgba(255,255,255,0) 100%)';
+                }
+            }
+            
+            // Update check marks
+            document.querySelectorAll('.theme-check-green, .theme-check-blue').forEach(el => el.classList.add('hidden'));
+            if (selectedTheme === 'green') document.querySelector('.theme-check-green')?.classList.remove('hidden');
+            else if (selectedTheme === 'blue') document.querySelector('.theme-check-blue')?.classList.remove('hidden');
+            
+            // Dispatch event
+            document.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: selectedTheme } }));
+            
+            showToast(`Theme changed to ${selectedTheme.charAt(0).toUpperCase() + selectedTheme.slice(1)}!`);
+        };
+    });
+
+    const closeBtn = document.getElementById('theme-modal-close');
+    closeBtn.onclick = () => {
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        document.getElementById('theme-modal-box').classList.remove('scale-100');
+        document.getElementById('theme-modal-box').classList.add('scale-95');
+    };
+
+    // Open modal with animation
+    modal.classList.remove('opacity-0', 'pointer-events-none');
+    document.getElementById('theme-modal-box').classList.remove('scale-95');
+    document.getElementById('theme-modal-box').classList.add('scale-100');
+}
+
+// === Edit Username Modal System ===
+function showEditUsernameModal(currentUsername) {
+    let modal = document.getElementById('edit-username-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'edit-username-modal';
+        modal.className = 'fixed inset-0 bg-gray-900/40 z-[120] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 px-6 backdrop-blur-sm';
+        modal.innerHTML = `
+            <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300 popup-content" id="edit-username-box">
+                <div class="w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-4 mx-auto" id="edit-username-icon" style="background-color: rgba(16, 185, 129, 0.1); color: #10B981;">
+                    <i class="fa-solid fa-id-badge"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 text-center mb-2">Edit Username</h3>
+                <p class="text-gray-500 text-center text-sm mb-6">Enter your new display name</p>
+                <div class="mb-6">
+                    <input type="text" id="edit-username-input" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[var(--primary)] transition-colors text-gray-900 font-medium placeholder-gray-400" placeholder="Enter new username" autocomplete="off">
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" class="flex-1 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors" id="edit-username-cancel">Cancel</button>
+                    <button type="button" class="flex-1 py-3.5 font-bold rounded-xl transition-colors text-white shadow-md focus:outline-none" id="edit-username-save" style="background-color: var(--primary);">Save</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    const inputEl = document.getElementById('edit-username-input');
+    inputEl.value = currentUsername;
+    
+    const close = () => {
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        document.getElementById('edit-username-box').classList.remove('scale-100');
+        document.getElementById('edit-username-box').classList.add('scale-95');
+    };
+    
+    const saveBtn = document.getElementById('edit-username-save');
+    const cancelBtn = document.getElementById('edit-username-cancel');
+    
+    // Clear old event listeners by cloning and replacing
+    const newSaveBtn = saveBtn.cloneNode(true);
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+    
+    // Get fresh references
+    const freshSaveBtn = document.getElementById('edit-username-save');
+    const freshCancelBtn = document.getElementById('edit-username-cancel');
+    const freshInputEl = document.getElementById('edit-username-input');
+    
+    // Setup event listeners
+    freshInputEl.onkeypress = (e) => {
+        if (e.key === 'Enter') {
+            freshSaveBtn.click();
+        }
+    };
+    
+    freshCancelBtn.onclick = close;
+    freshSaveBtn.onclick = async () => {
+        const newName = freshInputEl.value.trim();
+        if (!newName) {
+            showToast('Username cannot be empty', 'error');
+            return;
+        }
+        if (newName === currentUsername) {
+            close();
+            return;
+        }
+        
+        close();
+        await updateUsername(newName);
+    };
+    
+    // Open modal with animation
+    modal.classList.remove('opacity-0', 'pointer-events-none');
+    document.getElementById('edit-username-box').classList.remove('scale-95');
+    document.getElementById('edit-username-box').classList.add('scale-100');
+    
+    // Focus input
+    setTimeout(() => freshInputEl.focus(), 100);
+}
+
+async function updateUsername(newName) {
+    try {
+        // Update UI first for instant feedback
+        document.getElementById('display-username').innerText = newName;
+        
+        // Persist to Supabase
+        if (supabaseClient && _currentUser) {
+            await supabaseClient.from('profiles').update({ full_name: newName }).eq('id', _currentUser.id);
+            await supabaseClient.auth.updateUser({ data: { full_name: newName } });
+            showToast(`Username updated to ${newName}!`);
+        } else {
+            showToast(`Username updated to ${newName}!`);
+        }
+    } catch (err) {
+        console.error('Update username error:', err);
+        showToast('Failed to update username. Please try again.', 'error');
+    }
+}
+
+async function editUsername() {
+    const currentName = document.getElementById('display-username').innerText;
+    showEditUsernameModal(currentName);
+}
+
+async function resetPassword() {
+    if (!_currentUser) return;
+    const email = _currentUser.email;
+    if (confirm(`Send a password reset link to ${email}?`)) {
+        try {
+            const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+            if (error) {
+                showToast('Error: ' + error.message, 'error');
+            } else {
+                showToast('Reset link sent! Please check your email.', 'success');
+            }
+        } catch (err) {
+            showToast('Failed to send reset link.', 'error');
+        }
+    }
+}
+
+function logout() {
+    handleSignOut();
+}
+
+async function uploadAvatar(file) {
+    if (!_currentUser) {
+        showToast('User not found. Please login again.', 'error');
+        return;
+    }
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+        showToast('Unsupported file format. Use JPG, PNG, WEBP, or GIF.', 'error');
+        return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+        showToast('File too large. Maximum 2MB.', 'error');
+        return;
+    }
+
+    // Tampilkan loading state
+    const profileImg = document.getElementById('profile-img');
+    const loadingIndicator = document.getElementById('avatar-loading');
+    const originalSrc = profileImg.src;
+    
+    loadingIndicator.classList.remove('hidden');
+    loadingIndicator.classList.add('opacity-100');
+    loadingIndicator.style.opacity = '1';
+
+    try {
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        const fileName = `${_currentUser.id}_${Date.now()}.${fileExt}`;
+        const filePath = `public/${fileName}`;
+
+        // Upload ke Supabase Storage
+        const { error: uploadError, data } = await supabaseClient.storage
+            .from('avatars')
+            .upload(filePath, file, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        // Ambil URL publik
+        const { data: publicData } = supabaseClient.storage
+            .from('avatars')
+            .getPublicUrl(filePath);
+
+        const publicUrl = publicData.publicUrl;
+
+        // Tampilkan foto baru langsung di UI
+        profileImg.src = publicUrl;
+
+        // Save URL to profiles table in Supabase
+        await supabaseClient
+            .from('profiles')
+            .update({ avatar_url: publicUrl })
+            .eq('id', _currentUser.id);
+
+        showToast('Profile photo successfully updated!', 'success');
+
+    } catch (err) {
+        console.error('Upload error:', err);
+        showToast('Failed to upload photo. Please try again.', 'error');
+        // Restore original image on error
+        profileImg.src = originalSrc;
+    } finally {
+        // Sembunyikan loading state
+        loadingIndicator.style.opacity = '0';
+        setTimeout(() => {
+            loadingIndicator.classList.add('hidden');
+        }, 300);
+    }
+}
+
+// Listener ketika user memilih file
+document.getElementById('avatar-input').addEventListener('change', function (e) {
+    const file = e.target.files[0];
+    if (file) {
+        uploadAvatar(file);
+        this.value = ''; // Reset supaya bisa ganti foto lagi
+    }
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // Fetch User Details to display
+    if (supabaseClient) {
+        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+        if (user && !userError) {
+            _currentUser = user;
+            const name = user.user_metadata?.full_name || 'User';
+            const email = user.email || 'No email';
+            
+            // Update username dan email di UI
+            document.getElementById('display-username').innerText = name;
+            document.getElementById('display-email').innerText = email;
+            
+            // Cek apakah ada avatar yang sudah disimpan
+            try {
+                const { data: profile, error: profileError } = await supabaseClient
+                    .from('profiles')
+                    .select('avatar_url')
+                    .eq('id', user.id)
+                    .single();
+
+                const profileImg = document.getElementById('profile-img');
+                
+                if (profile?.avatar_url && !profileError) {
+                    profileImg.src = profile.avatar_url;
+                } else {
+                    // Fallback ke avatar otomatis jika belum ada foto
+                    profileImg.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=10B981&color=fff&bold=true`;
+                }
+            } catch (profileErr) {
+                console.error('Error loading profile:', profileErr);
+                // Gunakan default avatar jika ada error
+                document.getElementById('profile-img').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=10B981&color=fff&bold=true`;
+            }
+
+            // Show correct auth provider badge
+            const provider = user.app_metadata?.provider || 'email';
+            const badge = document.getElementById('auth-badge');
+            if (badge) {
+                if (provider === 'google') {
+                    badge.innerHTML = '<i class="fa-brands fa-google text-sm mt-px"></i> Google Authenticated';
+                } else {
+                    badge.innerHTML = '<i class="fa-solid fa-envelope text-sm mt-px"></i> Email Authenticated';
+                }
+            }
+        } else {
+            console.error('Error getting user:', userError);
+            showToast('Failed to load profile. Please refresh the page.', 'error');
+        }
+    }
+
+    renderAchievements();
+});
+
+function renderAchievements() {
+    if (typeof getAchievementsData !== 'function') return;
+    const achData = getAchievementsData();
+    
+    const countEl = document.getElementById('profile-achievements-count');
+    if (countEl) countEl.innerText = `${achData.unlockedCount}/${achData.totalCount}`;
+    
+    const gridEl = document.getElementById('profile-achievements-grid');
+    if (!gridEl) return;
+    
+    let html = '';
+    achData.achievements.forEach(ach => {
+        const opacity = ach.isUnlocked ? 'opacity-100 transform hover:scale-110' : 'opacity-40 grayscale';
+        const badgeColor = ach.isUnlocked ? 'bg-[var(--primary)]' : 'bg-gray-200';
+        
+        html += `
+            <div class="flex flex-col items-center justify-start gap-1.5 ${opacity} transition-all cursor-pointer" title="${ach.name}: ${ach.description}">
+                <div class="w-12 h-12 rounded-full ${badgeColor} theme-bg-update flex items-center justify-center border-2 border-white shadow-sm overflow-hidden">
+                    <!-- Blank image placeholder as requested -->
+                    <img src="https://placehold.co/100x100/e2e8f0/e2e8f0.png" alt="Badge" class="w-full h-full object-cover mix-blend-multiply">
+                </div>
+                <span class="text-[9px] font-bold text-center text-gray-600 leading-tight line-clamp-2">${ach.name}</span>
+            </div>
+        `;
+    });
+    gridEl.innerHTML = html;
+}

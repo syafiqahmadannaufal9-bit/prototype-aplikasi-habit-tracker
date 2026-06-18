@@ -1,0 +1,10 @@
+.category-btn.active span {
+    color: white;
+}
+.category-btn.active div {
+    background-color: transparent;
+    color: white;
+}
+.evaluation-option input:checked ~ div > .radio-inner {
+    opacity: 1;
+}

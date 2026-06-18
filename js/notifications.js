@@ -8,8 +8,40 @@ const NOTIF_DEFAULTS = {
     enabled: false,
     time: '08:00',
     selectedHabits: [], // empty = all (will be populated on first enable)
-    lastNotifiedDate: ''
+    lastNotifiedDate: '',
+    emailEnabled: false
 };
+
+// ===== DEFAULT SMTP CONFIGURATION =====
+// Ganti nilai di bawah ini dengan kredensial SMTP Server Anda agar email terkirim otomatis ke HP / Laptop
+// PANDUAN PENGATURAN (GMAIL):
+// 1. Masuk ke Akun Google Anda -> Keamanan -> Verifikasi 2 Langkah (Harus Aktif).
+// 2. Cari menu "Sandi Aplikasi" (App Passwords) di bagian bawah halaman Keamanan.
+// 3. Buat sandi baru untuk aplikasi (pilih 'Lainnya' dan beri nama 'Habit Tracker').
+// 4. Salin kode 16 karakter yang muncul dan masukkan ke bagian 'password' di bawah ini.
+// 5. Ganti 'username' dan 'from' dengan alamat email Gmail Anda.
+const DEFAULT_SMTP_CONFIG = {
+    enabled: true, // Diubah menjadi true agar pengiriman email riil aktif secara default
+    host: 'smtp.gmail.com', // Host SMTP Gmail
+    port: 465, // Port SSL Gmail
+    username: 'email-anda@gmail.com', // GANTI dengan alamat Gmail Anda
+    password: 'password-aplikasi-anda', // GANTI dengan 16 karakter Sandi Aplikasi Gmail Anda
+    from: 'email-anda@gmail.com' // GANTI dengan alamat Gmail Anda yang sama
+};
+
+function getSMTPConfig() {
+    try {
+        const stored = localStorage.getItem('smtp_config');
+        if (stored) {
+            return JSON.parse(stored);
+        } else {
+            localStorage.setItem('smtp_config', JSON.stringify(DEFAULT_SMTP_CONFIG));
+            return DEFAULT_SMTP_CONFIG;
+        }
+    } catch (e) {
+        return DEFAULT_SMTP_CONFIG;
+    }
+}
 
 // --- Get / Save Settings ---
 function getNotificationSettings() {
@@ -24,6 +56,113 @@ function getNotificationSettings() {
 
 function saveNotificationSettings(settings) {
     localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify(settings));
+}
+
+// --- Retrieve Active User Email ---
+async function getCurrentUserEmail() {
+    try {
+        if (window.supabaseClient && typeof window.supabaseClient.auth.getUser === 'function') {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (user?.email) return user.email;
+        }
+    } catch (e) {
+        console.error('Error fetching Supabase user:', e);
+    }
+    // Fallback: local session in localStorage
+    try {
+        const sessionStr = localStorage.getItem('local_session');
+        if (sessionStr) {
+            const session = JSON.parse(sessionStr);
+            if (session?.user?.email) {
+                return session.user.email;
+            }
+        }
+    } catch (e) {
+        console.error('Error fetching local session:', e);
+    }
+    return null;
+}
+
+// --- Send Email Notification via SMTP Server ---
+async function sendEmailNotification(incompleteHabits, quote) {
+    try {
+        const smtpConfig = getSMTPConfig();
+        if (!smtpConfig.enabled || !smtpConfig.host || !smtpConfig.username || !smtpConfig.password) {
+            console.log('SMTP is disabled or not configured');
+            return;
+        }
+
+        const toEmail = await getCurrentUserEmail();
+        if (!toEmail) {
+            console.warn('Could not retrieve recipient email address for notification.');
+            return;
+        }
+
+        if (typeof Email === 'undefined') {
+            console.error('SMTPjs (Email object) is not loaded.');
+            return;
+        }
+
+        // Generate theme and visual items matching the app's current mode
+        const theme = document.documentElement.getAttribute('data-theme') || 'green';
+        const primaryColor = theme === 'blue' ? '#5BA4C9' : '#10B981';
+
+        const habitListHtml = incompleteHabits.map(h => `
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding: 12px; background-color: #f8fafc; border-radius: 16px; border: 1px solid #f1f5f9;">
+                <div style="font-size: 20px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background-color: rgba(16, 185, 129, 0.1); border-radius: 50%; color: ${primaryColor};">📌</div>
+                <div style="font-weight: 700; color: #1e293b; font-size: 14px;">${h.name}</div>
+            </div>
+        `).join('');
+
+        const appOrigin = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '');
+        const dashboardUrl = appOrigin + '/index.html';
+
+        const emailBody = `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 500px; margin: auto; padding: 30px; border: 1px solid #f1f5f9; border-radius: 28px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); background-color: #ffffff;">
+                <div style="text-align: center; margin-bottom: 25px;">
+                    <div style="width: 56px; height: 56px; line-height: 56px; border-radius: 50%; background-color: ${primaryColor}1A; color: ${primaryColor}; font-size: 26px; display: inline-block; text-align: center; margin-bottom: 15px;">⏰</div>
+                    <h2 style="color: #0f172a; font-size: 22px; font-weight: 800; margin: 0; tracking-tight: -0.025em;">Waktunya Habit Time!</h2>
+                    <p style="color: #64748b; font-size: 14px; margin-top: 8px; margin-bottom: 0;">Jangan lewatkan hari ini untuk menjaga konsistensi Anda.</p>
+                </div>
+                
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 18px; margin-bottom: 25px; border: 1px dashed #e2e8f0; text-align: center;">
+                    <p style="color: #475569; font-size: 14px; line-height: 1.6; font-style: italic; margin: 0; font-weight: 500;">
+                        "${quote}"
+                    </p>
+                </div>
+
+                <div style="margin-bottom: 25px;">
+                    <p style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px;">Habit yang belum diselesaikan hari ini:</p>
+                    ${habitListHtml}
+                </div>
+
+                <div style="text-align: center; margin-bottom: 25px;">
+                    <a href="${dashboardUrl}" style="background-color: ${primaryColor}; color: white; padding: 14px 32px; text-decoration: none; border-radius: 16px; font-weight: 700; display: inline-block; font-size: 14px; box-shadow: 0 8px 20px -6px ${primaryColor}80; transition: all 0.2s;">
+                        Buka & Selesaikan Sekarang
+                    </a>
+                </div>
+
+                <p style="color: #94a3b8; font-size: 11px; text-align: center; line-height: 1.6; border-top: 1px solid #f1f5f9; padding-top: 20px; margin-top: 25px; font-weight: 500;">
+                    Anda menerima email ini karena Anda mengaktifkan pengingat email di Habit Tracker.<br>
+                    Untuk mematikan, silakan buka Pengaturan Notifikasi di dashboard.
+                </p>
+            </div>
+        `;
+
+        await Email.send({
+            Host: smtpConfig.host,
+            Username: smtpConfig.username,
+            Password: smtpConfig.password,
+            Port: smtpConfig.port,
+            To: toEmail,
+            From: smtpConfig.from || smtpConfig.username,
+            Subject: "⏰ Pengingat Habit: Selesaikan Habit Kamu Hari Ini!",
+            Body: emailBody
+        });
+        console.log('Habit reminder email notification sent successfully to:', toEmail);
+    } catch (err) {
+        console.error('Failed to send SMTP email notification:', err);
+    }
 }
 
 // --- Browser Notification Permission ---
@@ -235,6 +374,11 @@ function checkAndFireNotifications() {
     
     // 2. Show in-app popup
     showNotificationPopup(incompleteHabits, randomQuote);
+
+    // 3. Send email via SMTP (if enabled)
+    if (settings.emailEnabled) {
+        sendEmailNotification(incompleteHabits, randomQuote);
+    }
 }
 
 // --- On-Entry Check (when user opens the app / page loads) ---
@@ -319,6 +463,28 @@ function openNotificationModal() {
                         <input type="time" id="notif-time-input" value="08:00" class="bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm font-bold text-gray-900 focus:outline-none focus:border-[var(--primary)] transition-colors cursor-pointer">
                     </div>
                 </div>
+
+                <!-- Email Notification Toggle -->
+                <div id="notif-email-section" class="mb-4 opacity-50 pointer-events-none transition-opacity duration-300">
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-regular fa-envelope text-gray-500"></i>
+                            <div>
+                                <span class="text-sm font-bold text-gray-900">Kirim ke Email</span>
+                                <p class="text-[10px] text-gray-400 font-medium mt-0.5">Kirim pengingat ke email via SMTP</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="openSMTPModalFromNotif(event)" class="text-xs p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors" title="SMTP Settings">
+                                <i class="fa-solid fa-gear"></i>
+                            </button>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="notif-email-toggle" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm peer-checked:bg-[var(--primary)]"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
                 
                 <!-- Habit Selection -->
                 <div id="notif-habits-section" class="mb-5 opacity-50 pointer-events-none transition-opacity duration-300">
@@ -361,9 +527,11 @@ function openNotificationModal() {
     const settings = getNotificationSettings();
     const toggle = document.getElementById('notif-toggle');
     const timeInput = document.getElementById('notif-time-input');
+    const emailToggle = document.getElementById('notif-email-toggle');
     
     if (toggle) toggle.checked = settings.enabled;
     if (timeInput) timeInput.value = settings.time || '08:00';
+    if (emailToggle) emailToggle.checked = settings.emailEnabled || false;
     
     // Update sections enabled state
     updateNotifSectionsState(settings.enabled);
@@ -402,6 +570,7 @@ window.closeNotificationModal = closeNotificationModal;
 function updateNotifSectionsState(enabled) {
     const timeSection = document.getElementById('notif-time-section');
     const habitsSection = document.getElementById('notif-habits-section');
+    const emailSection = document.getElementById('notif-email-section');
     
     if (timeSection) {
         timeSection.classList.toggle('opacity-50', !enabled);
@@ -410,6 +579,10 @@ function updateNotifSectionsState(enabled) {
     if (habitsSection) {
         habitsSection.classList.toggle('opacity-50', !enabled);
         habitsSection.classList.toggle('pointer-events-none', !enabled);
+    }
+    if (emailSection) {
+        emailSection.classList.toggle('opacity-50', !enabled);
+        emailSection.classList.toggle('pointer-events-none', !enabled);
     }
 }
 
@@ -552,18 +725,20 @@ window.toggleAllNotifHabits = toggleAllNotifHabits;
 function saveNotifSettingsFromModal() {
     const toggle = document.getElementById('notif-toggle');
     const timeInput = document.getElementById('notif-time-input');
+    const emailToggle = document.getElementById('notif-email-toggle');
     const checkboxes = document.querySelectorAll('.notif-habit-checkbox');
     
     const settings = getNotificationSettings();
     settings.enabled = toggle ? toggle.checked : false;
     settings.time = timeInput ? timeInput.value : '08:00';
+    settings.emailEnabled = emailToggle ? emailToggle.checked : false;
     settings.selectedHabits = Array.from(checkboxes)
         .filter(cb => cb.checked)
         .map(cb => cb.value);
     
     // Reset lastNotifiedDate if time changed so it can re-trigger today
     const oldSettings = getNotificationSettings();
-    if (oldSettings.time !== settings.time) {
+    if (oldSettings.time !== settings.time || oldSettings.emailEnabled !== settings.emailEnabled) {
         settings.lastNotifiedDate = '';
     }
     
@@ -585,11 +760,175 @@ function saveNotifSettingsFromModal() {
     updateBellIndicator();
     
     if (typeof showToast === 'function') {
-        showToast(settings.enabled ? 'Notifications enabled! 🔔' : 'Notifications disabled');
+        showToast(settings.enabled ? 'Notifications saved! 🔔' : 'Notifications disabled');
     }
 }
 
 window.saveNotifSettingsFromModal = saveNotifSettingsFromModal;
+
+// --- SMTP Config Modal for Notifications ---
+function openSMTPModalFromNotif(event) {
+    if (event) event.stopPropagation();
+    let smtpModal = document.getElementById('notif-smtp-modal');
+    if (!smtpModal) {
+        smtpModal = document.createElement('div');
+        smtpModal.id = 'notif-smtp-modal';
+        smtpModal.className = 'fixed inset-0 bg-gray-900/40 z-[130] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300 backdrop-blur-sm';
+        smtpModal.innerHTML = `
+            <div class="bg-white rounded-3xl p-6 shadow-2xl max-w-md w-full border border-gray-100 transform scale-95 opacity-0 transition-all duration-300 popup-content" id="notif-smtp-modal-box" onclick="event.stopPropagation()">
+                <div class="flex justify-between items-center mb-5 pb-3 border-b border-gray-100">
+                    <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                        <i class="fa-solid fa-server" style="color: var(--primary);"></i>
+                        Konfigurasi SMTP Server
+                    </h3>
+                    <button type="button" onclick="closeSMTPModalFromNotif()" class="text-gray-400 hover:text-gray-600 transition">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+                
+                <form id="notif-smtp-form" onsubmit="saveSMTPConfigFromNotif(event)">
+                    <div class="mb-4">
+                        <div class="flex items-center justify-between cursor-pointer">
+                            <span class="text-xs font-bold text-gray-700">Aktifkan SMTP Server Riil</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="notif-smtp-enabled" class="sr-only peer">
+                                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[var(--primary)]"></div>
+                            </label>
+                        </div>
+                        <p class="text-[10px] text-gray-400 mt-1">Jika diaktifkan, email pengingat habit akan dikirim ke inbox riil Anda menggunakan server SMTP ini.</p>
+                    </div>
+
+                    <div class="flex flex-col gap-3 transition-opacity duration-300" id="notif-smtp-fields">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-gray-600 mb-1" for="notif-smtp-host">SMTP Host</label>
+                            <input type="text" id="notif-smtp-host" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[var(--primary)] focus:bg-white transition" placeholder="e.g. smtp.gmail.com">
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="col-span-2">
+                                <label class="block text-[11px] font-semibold text-gray-600 mb-1" for="notif-smtp-user">Username</label>
+                                <input type="text" id="notif-smtp-user" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[var(--primary)] focus:bg-white transition" placeholder="Username SMTP">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-600 mb-1" for="notif-smtp-port">Port</label>
+                                <input type="number" id="notif-smtp-port" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[var(--primary)] focus:bg-white transition" placeholder="465">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-semibold text-gray-600 mb-1" for="notif-smtp-pass">Password</label>
+                            <input type="password" id="notif-smtp-pass" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[var(--primary)] focus:bg-white transition" placeholder="Password/App Password SMTP">
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-semibold text-gray-600 mb-1" for="notif-smtp-from">Alamat Email Pengirim (From)</label>
+                            <input type="email" id="notif-smtp-from" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[var(--primary)] focus:bg-white transition" placeholder="email-anda@gmail.com">
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 mt-6">
+                        <button type="button" onclick="closeSMTPModalFromNotif()" class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition text-xs">
+                            Batal
+                        </button>
+                        <button type="submit" class="flex-1 py-2.5 text-white font-bold rounded-xl transition text-xs shadow-md" style="background-color: var(--primary);">
+                            Simpan & Hubungkan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+        document.body.appendChild(smtpModal);
+
+        // Close on backdrop click
+        smtpModal.addEventListener('click', (e) => {
+            if (e.target === smtpModal) closeSMTPModalFromNotif();
+        });
+
+        // Toggle fields accessibility
+        const enabledInput = document.getElementById('notif-smtp-enabled');
+        const fieldsDiv = document.getElementById('notif-smtp-fields');
+        if (enabledInput && fieldsDiv) {
+            enabledInput.addEventListener('change', () => {
+                fieldsDiv.style.opacity = enabledInput.checked ? '1' : '0.5';
+                fieldsDiv.style.pointerEvents = enabledInput.checked ? 'auto' : 'none';
+            });
+        }
+    }
+
+    // Load credentials
+    const config = getSMTPConfig();
+
+    const enabledInput = document.getElementById('notif-smtp-enabled');
+    const hostInput = document.getElementById('notif-smtp-host');
+    const userInput = document.getElementById('notif-smtp-user');
+    const portInput = document.getElementById('notif-smtp-port');
+    const passInput = document.getElementById('notif-smtp-pass');
+    const fromInput = document.getElementById('notif-smtp-from');
+    const fieldsDiv = document.getElementById('notif-smtp-fields');
+
+    if (enabledInput) {
+        enabledInput.checked = config.enabled;
+        hostInput.value = config.host || '';
+        userInput.value = config.username || '';
+        portInput.value = config.port || 465;
+        passInput.value = config.password || '';
+        fromInput.value = config.from || '';
+
+        fieldsDiv.style.opacity = config.enabled ? '1' : '0.5';
+        fieldsDiv.style.pointerEvents = config.enabled ? 'auto' : 'none';
+    }
+
+    // Display
+    smtpModal.classList.remove('opacity-0', 'pointer-events-none');
+    const box = document.getElementById('notif-smtp-modal-box');
+    if (box) {
+        box.classList.remove('scale-95', 'opacity-0');
+        box.classList.add('scale-100', 'opacity-100');
+    }
+}
+
+window.openSMTPModalFromNotif = openSMTPModalFromNotif;
+
+function closeSMTPModalFromNotif() {
+    const smtpModal = document.getElementById('notif-smtp-modal');
+    const box = document.getElementById('notif-smtp-modal-box');
+    if (box) {
+        box.classList.remove('scale-100', 'opacity-100');
+        box.classList.add('scale-95', 'opacity-0');
+    }
+    if (smtpModal) {
+        smtpModal.classList.add('opacity-0', 'pointer-events-none');
+    }
+}
+
+window.closeSMTPModalFromNotif = closeSMTPModalFromNotif;
+
+function saveSMTPConfigFromNotif(e) {
+    if (e) e.preventDefault();
+    const config = {
+        enabled: document.getElementById('notif-smtp-enabled').checked,
+        host: document.getElementById('notif-smtp-host').value.trim(),
+        username: document.getElementById('notif-smtp-user').value.trim(),
+        port: parseInt(document.getElementById('notif-smtp-port').value) || 465,
+        password: document.getElementById('notif-smtp-pass').value.trim(),
+        from: document.getElementById('notif-smtp-from').value.trim()
+    };
+
+    localStorage.setItem('smtp_config', JSON.stringify(config));
+    
+    // Auto-enable email toggle in main modal if real SMTP is enabled
+    const notifEmailToggle = document.getElementById('notif-email-toggle');
+    if (notifEmailToggle && config.enabled) {
+        notifEmailToggle.checked = true;
+    }
+    
+    if (typeof showToast === 'function') {
+        showToast('Konfigurasi SMTP berhasil disimpan!', 'success');
+    }
+    closeSMTPModalFromNotif();
+}
+
+window.saveSMTPConfigFromNotif = saveSMTPConfigFromNotif;
 
 // --- Bell Indicator (small dot on bell icon if notifications are active) ---
 function updateBellIndicator() {
