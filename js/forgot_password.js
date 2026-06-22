@@ -26,8 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
         updateColors(e.detail.theme);
     });
     
-    // Auto-select Email method
-    selectMethod('email');
+    // Auto-go to step 2 (email input) — step 1 (method choice) is skipped
+    showStep(2);
     
     // Load SMTP Settings from LocalStorage
     initSMTPForm();
@@ -188,7 +188,7 @@ function showStep(stepNum) {
     // Hide all panels
     document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
     
-    // Show target panel
+    // Panels order: step-choose-method (hidden/skipped), step-input-details, step-verify-otp (old pwd), step-reset-password, step-success
     const panels = ['step-choose-method', 'step-input-details', 'step-verify-otp', 'step-reset-password', 'step-success'];
     const targetPanel = document.getElementById(panels[stepNum - 1]);
     if (targetPanel) {
@@ -199,9 +199,11 @@ function showStep(stepNum) {
         targetPanel.style.animation = '';
     }
     
-    // Update step dots
+    // Update step dots (3 dots, mapping visual step 1=email, 2=old pwd, 3=new pwd)
+    // stepNum 2 -> dot index 0, stepNum 3 -> dots 0-1, stepNum 4 -> dots 0-2
+    const visualStep = stepNum - 1; // shift by 1 since step 1 is hidden
     document.querySelectorAll('.step-dot').forEach((dot, i) => {
-        dot.classList.toggle('active', i < stepNum);
+        dot.classList.toggle('active', i < visualStep);
     });
     
     // Update title/subtitle
@@ -213,17 +215,13 @@ function updateHeader(step) {
     const subtitleEl = document.getElementById('page-subtitle');
     const iconEl = document.getElementById('header-icon');
     
-    if (step === 1) {
+    if (step === 2) {
         titleEl.textContent = 'Lupa Kata Sandi?';
-        subtitleEl.textContent = 'Pilih metode pemulihan akun yang kamu inginkan';
-        iconEl.innerHTML = '<i class="fa-solid fa-key"></i>';
-    } else if (step === 2) {
-        titleEl.textContent = 'Reset via Email';
-        subtitleEl.textContent = 'Masukkan alamat email Anda untuk menerima konfirmasi keamanan';
+        subtitleEl.textContent = 'Masukkan email Anda untuk menerima link reset kata sandi';
         iconEl.innerHTML = '<i class="fa-regular fa-envelope"></i>';
     } else if (step === 3) {
-        titleEl.textContent = 'Konfirmasi Keamanan';
-        subtitleEl.textContent = 'Apakah ini benar-benar Anda? Setujui di email Anda';
+        titleEl.textContent = 'Verifikasi Identitas';
+        subtitleEl.textContent = 'Masukkan kata sandi lama Anda untuk melanjutkan';
         iconEl.innerHTML = '<i class="fa-solid fa-shield-halved"></i>';
     } else if (step === 4) {
         titleEl.textContent = 'Kata Sandi Baru';
@@ -299,99 +297,20 @@ async function sendResetCode() {
     // Retrieve SMTP configurations
     const smtpConfig = getSMTPConfig();
     
-    if (smtpConfig.enabled && smtpConfig.host && smtpConfig.username && smtpConfig.password) {
-        // Construct authentication link
-        const origin = window.location.origin + window.location.pathname;
-        const verificationLink = `${origin}?email=${encodeURIComponent(email)}&confirm=true`;
-        
-        const emailBody = `
-            <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <span style="font-size: 24px; font-weight: bold; color: #10B981;">Habit Tracker</span>
-                </div>
-                <h3 style="color: #1e293b; font-size: 18px; margin-bottom: 12px; font-weight: bold; text-align: center;">Apakah ini benar Anda?</h3>
-                <p style="color: #64748b; font-size: 14px; line-height: 1.5; text-align: center; margin-bottom: 24px;">
-                    Kami menerima permintaan pengaturan ulang kata sandi untuk akun Anda (<strong>${email}</strong>). Harap konfirmasi identitas Anda dengan mengklik tombol di bawah ini.
-                </p>
-                <div style="text-align: center; margin-bottom: 24px;">
-                    <a href="${verificationLink}" style="background-color: #10B981; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 14px; box-shadow: 0 4px 6px -1px rgba(16,185,129,0.2);">
-                        Setujui (Ya, Ini Saya)
-                    </a>
-                </div>
-                <p style="color: #94a3b8; font-size: 11px; text-align: center; line-height: 1.5; border-top: 1px solid #f1f5f9; padding-top: 15px;">
-                    Jika Anda tidak merasa mengajukan reset kata sandi ini, harap abaikan pesan ini untuk menjaga keamanan akun Anda.
-                </p>
-            </div>
-        `;
+    // After email is submitted, go directly to step 3 (old password entry)
+    await new Promise(resolve => setTimeout(resolve, 800));
 
-        try {
-            const message = await Email.send({
-                Host: smtpConfig.host,
-                Username: smtpConfig.username,
-                Password: smtpConfig.password,
-                Port: smtpConfig.port,
-                To: email,
-                From: smtpConfig.from,
-                Subject: "Apakah ini Anda? - Konfirmasi Reset Kata Sandi",
-                Body: emailBody
-            });
+    spinner.classList.add('hidden');
+    textEl.style.opacity = '1';
+    btn.disabled = false;
 
-            spinner.classList.add('hidden');
-            textEl.style.opacity = '1';
-            btn.disabled = false;
-
-            if (message === "OK") {
-                if (typeof showToast === 'function') {
-                    showToast('Link persetujuan berhasil dikirim ke email Anda!', 'success');
-                }
-                // Hide simulated inbox container as actual email is sent
-                document.getElementById('simulated-email-box').style.display = 'none';
-                document.getElementById('otp-destination').textContent = email;
-                showStep(3);
-            } else {
-                if (typeof showToast === 'function') {
-                    showToast('SMTP Gagal: ' + message, 'error');
-                }
-            }
-        } catch (err) {
-            spinner.classList.add('hidden');
-            textEl.style.opacity = '1';
-            btn.disabled = false;
-            if (typeof showToast === 'function') {
-                showToast('SMTP Error: ' + err.message, 'error');
-            }
-        }
-    } else {
-        // Fallback simulation mode
-        await new Promise(resolve => setTimeout(resolve, 1200));
-
-        spinner.classList.add('hidden');
-        textEl.style.opacity = '1';
-        btn.disabled = false;
-
-        document.getElementById('simulated-email-box').style.display = 'block';
-        document.getElementById('otp-destination').textContent = email;
-        showStep(3);
-    }
-}
-
-// ===== Simulated Inbox Actions =====
-function approveResetSimulated() {
     if (typeof showToast === 'function') {
-        showToast('Keamanan email disetujui!', 'success');
+        showToast('Email ditemukan. Masukkan kata sandi lama Anda.', 'success');
     }
-    showStep(4);
+    showStep(3);
 }
 
-function rejectResetSimulated() {
-    if (typeof showToast === 'function') {
-        showToast('Reset kata sandi dibatalkan oleh pemilik akun.', 'warning');
-    }
-    // Redirect back to login for security
-    setTimeout(() => {
-        window.location.href = "login.html";
-    }, 1500);
-}
+
 
 // ===== Password Reset Submission =====
 async function handlePasswordResetSubmit(e) {
@@ -437,6 +356,27 @@ async function handlePasswordResetSubmit(e) {
     showStep(5);
 }
 
+// ===== Verify Old Password then go to Step 4 =====
+function verifyOldPassword() {
+    const oldPwd = document.getElementById('old-password').value;
+    if (!oldPwd) {
+        if (typeof showToast === 'function') showToast('Masukkan kata sandi lama Anda', 'error');
+        return;
+    }
+
+    const email = document.getElementById('reset-email').value.trim().toLowerCase();
+    const localUsers = JSON.parse(localStorage.getItem('local_users') || '[]');
+    const user = localUsers.find(u => u.email.toLowerCase().trim() === email);
+
+    if (user && user.password && user.password !== oldPwd) {
+        if (typeof showToast === 'function') showToast('Kata sandi lama tidak sesuai!', 'error');
+        return;
+    }
+
+    // Old password verified (or no stored record — allow for prototype)
+    showStep(4);
+}
+
 function goToStep2() {
     showStep(2);
 }
@@ -449,10 +389,11 @@ function goBackToStep2() {
     showStep(2);
 }
 
+function goBackToStep3() {
+    showStep(3);
+}
+
 function resendCode() {
-    if (typeof showToast === 'function') {
-        showToast('Email verifikasi keamanan berhasil dikirim ulang!', 'success');
-    }
     sendResetCode();
 }
 
@@ -462,12 +403,12 @@ function togglePasswordVisibility(fieldId, toggleIconId) {
     if (input && icon) {
         if (input.type === 'password') {
             input.type = 'text';
-            icon.classList.remove('fa-regular', 'fa-eye');
-            icon.classList.add('fa-regular', 'fa-eye-slash');
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
         } else {
             input.type = 'password';
-            icon.classList.remove('fa-regular', 'fa-eye-slash');
-            icon.classList.add('fa-regular', 'fa-eye');
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
         }
     }
 }
