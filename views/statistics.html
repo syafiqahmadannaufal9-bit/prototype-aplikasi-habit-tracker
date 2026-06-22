@@ -86,6 +86,26 @@
             </div>
         </div>
     </section>
+    <!-- Habit Performance Summary -->
+    <section class="px-6 mt-6 animate-slide-up delay-400">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Habit Performance Summary</h2>
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 overflow-x-auto">
+            <table class="w-full text-left border-collapse" style="table-layout: fixed; min-width: 600px;">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-100 text-[10px] text-gray-500 uppercase font-semibold">
+                        <th class="py-3 px-4 w-1/3 rounded-tl-xl">Habit Name</th>
+                        <th class="py-3 px-4 w-1/6 text-center">Completion Rate</th>
+                        <th class="py-3 px-4 w-1/6 text-center">Current Streak</th>
+                        <th class="py-3 px-4 w-1/6 text-center">Longest Streak</th>
+                        <th class="py-3 px-4 w-1/6 text-center rounded-tr-xl">Status Trend</th>
+                    </tr>
+                </thead>
+                <tbody id="performance-table-body" class="divide-y divide-gray-100">
+                    <!-- Dynamically populated via JS -->
+                </tbody>
+            </table>
+        </div>
+    </section>
 
     <!-- Insights & Reports -->
     <section class="px-6 mt-6 animate-slide-up delay-400 flex flex-col mb-6">
@@ -260,6 +280,9 @@
                 }
             });
             
+            // Generate Performance Table
+            generatePerformanceTable();
+
             // Generate Insights
             generateInsights(stats, period);
         }
@@ -297,6 +320,83 @@
             } else {
                 addInsight(list, "Building Consistency", "Try linking a new habit to an existing routine to build a streak.", 'fa-lightbulb', 'yellow');
             }
+        }
+
+        function generatePerformanceTable() {
+            const tbody = document.getElementById('performance-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const habits = getHabits();
+            if (habits.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-500 text-sm">No habits available</td></tr>`;
+                return;
+            }
+
+            const todayStr = getLocalDateString();
+            const c = getCompletions();
+
+            let html = '';
+            habits.forEach(habit => {
+                // Kalkulasi
+                const accuracy = getMonthlyAccuracy(habit.id, todayStr);
+                const currentStreak = getHabitStreak(habit.id, todayStr);
+                const longestStreak = getHabitLongestStreak(habit.id);
+
+                // Hitung Trend (7 hari terakhir vs 7 hari sebelumnya)
+                let current7 = 0;
+                let prev7 = 0;
+                const todayDate = new Date(todayStr);
+                for(let i=0; i<14; i++) {
+                    let d = new Date(todayDate);
+                    d.setDate(d.getDate() - i);
+                    let dStr = getLocalDateString(d);
+                    if(c[dStr] && c[dStr][habit.id]) {
+                        if(i < 7) current7++;
+                        else prev7++;
+                    }
+                }
+                const isUp = current7 >= prev7;
+
+                html += `
+                <tr class="hover:bg-gray-50/50 transition-colors">
+                    <td class="py-4 px-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center text-sm shrink-0">
+                                ${habit.iconHtml || '<i class="fa-solid fa-star"></i>'}
+                            </div>
+                            <span class="font-bold text-sm text-gray-800 truncate">${habit.name}</span>
+                        </div>
+                    </td>
+                    <td class="py-4 px-4 text-center">
+                        <div class="flex flex-col items-center gap-1.5">
+                            <span class="text-xs font-bold text-gray-700">${accuracy}%</span>
+                            <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                                <div class="bg-[var(--primary)] h-full rounded-full" style="width: ${accuracy}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-4 px-4 text-center">
+                        <span class="inline-flex items-center gap-1 text-xs font-bold text-orange-500 bg-orange-50 px-2 py-1 rounded-md">
+                            <i class="fa-solid fa-fire"></i> ${currentStreak}
+                        </span>
+                    </td>
+                    <td class="py-4 px-4 text-center">
+                        <span class="inline-flex items-center gap-1 text-xs font-bold text-yellow-600 bg-yellow-50 px-2 py-1 rounded-md">
+                            <i class="fa-solid fa-trophy"></i> ${longestStreak}
+                        </span>
+                    </td>
+                    <td class="py-4 px-4 text-center">
+                        ${isUp 
+                            ? '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded border border-emerald-100 uppercase tracking-wide"><i class="fa-solid fa-caret-up"></i> Up</span>'
+                            : '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-50 px-2 py-1 rounded border border-red-100 uppercase tracking-wide"><i class="fa-solid fa-caret-down"></i> Down</span>'
+                        }
+                    </td>
+                </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
         }
 
         function addInsight(list, title, msg, iconClass, colorMode) {

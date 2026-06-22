@@ -45,21 +45,23 @@
     <!-- Calendar Grid -->
     <section class="px-6 mt-6 animate-slide-up delay-200">
         <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
-            <!-- Days of week -->
-            <div class="grid grid-cols-7 gap-2 mb-4 text-center">
-                <span class="text-xs font-bold text-gray-400">S</span>
-                <span class="text-xs font-bold text-gray-400">M</span>
-                <span class="text-xs font-bold text-gray-400">T</span>
-                <span class="text-xs font-bold text-gray-400">W</span>
-                <span class="text-xs font-bold text-gray-400">T</span>
-                <span class="text-xs font-bold text-gray-400">F</span>
-                <span class="text-xs font-bold text-gray-400">S</span>
-            </div>
-            
-            <!-- Dates -->
-            <div class="grid grid-cols-7 gap-y-4 gap-x-2 text-center" id="calendar-grid">
-                <!-- Javascript will populate this -->
-            </div>
+            <!-- Calendar Table -->
+            <table class="w-full table-fixed border-collapse">
+                <thead>
+                    <tr>
+                        <th class="py-2 text-xs font-bold text-gray-400 text-center">S</th>
+                        <th class="py-2 text-xs font-bold text-gray-400 text-center">M</th>
+                        <th class="py-2 text-xs font-bold text-gray-400 text-center">T</th>
+                        <th class="py-2 text-xs font-bold text-gray-400 text-center">W</th>
+                        <th class="py-2 text-xs font-bold text-gray-400 text-center">T</th>
+                        <th class="py-2 text-xs font-bold text-gray-400 text-center">F</th>
+                        <th class="py-2 text-xs font-bold text-gray-400 text-center">S</th>
+                    </tr>
+                </thead>
+                <tbody id="calendar-grid">
+                    <!-- Javascript will populate this -->
+                </tbody>
+            </table>
         </div>
     </section>
 
@@ -139,14 +141,15 @@
             const primaryColor = theme === 'blue' ? '#5BA4C9' : '#10B981';
             const lightColor = theme === 'blue' ? '#E0F2FE' : '#D1FAE5';
             const today = new Date();
-            const todayStr = today.toISOString().slice(0, 10);
+            const todayStr = getLocalDateString(today);
 
             // Month title
             const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
             document.getElementById('cal-month-title').textContent = `${monthNames[calMonth]} ${calYear}`;
 
             // Calendar grid
-            const grid = document.getElementById('calendar-grid');
+            const tbody = document.getElementById('calendar-grid');
+            if(!tbody) return;
             const firstDay = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
             const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
 
@@ -154,33 +157,42 @@
             const completions = getCompletions();
             const loginDate = getLoginDate();
 
-            let html = '';
+            let html = '<tr>';
             // Empty cells
             for (let i = 0; i < firstDay; i++) {
-                html += '<div></div>';
+                html += '<td class="border border-gray-100 p-1"></td>';
             }
 
+            let dayOfWeek = firstDay;
+
             for (let d = 1; d <= daysInMonth; d++) {
+                if (dayOfWeek === 7) {
+                    html += '</tr><tr>';
+                    dayOfWeek = 0;
+                }
+
                 const dateObj = new Date(calYear, calMonth, d);
-                const dateStr = dateObj.toISOString().slice(0, 10);
+                const dateStr = getLocalDateString(dateObj);
                 const isToday = dateStr === todayStr;
                 const isSelected = d === calSelectedDay;
                 const isPast = dateObj <= today;
                 const isFuture = dateStr > todayStr;
 
-                let classes = 'calendar-day w-8 h-8 rounded-full flex items-center justify-center mx-auto text-sm font-medium transition-all cursor-pointer hover:scale-110 relative';
-
+                let cellClasses = 'border border-gray-200 p-1 align-top text-center transition-colors cursor-pointer hover:bg-gray-50';
+                let innerClasses = 'w-7 h-7 rounded-full flex items-center justify-center mx-auto text-sm font-medium relative transition-transform hover:scale-110';
                 let style = '';
+
                 if (isSelected) {
-                    classes += ' text-white shadow-md';
+                    innerClasses += ' text-white shadow-md';
                     style = `background-color: ${primaryColor};`;
+                    cellClasses += ' bg-gray-50';
                 } else if (isToday) {
-                    classes += ' text-white';
-                    style = `background-color: ${primaryColor}; opacity: 0.7;`;
+                    innerClasses += ' text-white';
+                    style = `background-color: ${primaryColor}; opacity: 0.8;`; // Green circle for active day
                 } else if (isFuture) {
-                    classes += ' text-gray-400';
+                    innerClasses += ' text-gray-400';
                 } else {
-                    classes += ' text-gray-700 bg-gray-50';
+                    innerClasses += ' text-gray-700';
                 }
 
                 // Red dot for dates with incomplete habits
@@ -192,23 +204,41 @@
                     }
                 }
 
-                html += `<div class="${classes}" style="${style}" data-date="${dateStr}" data-day="${d}" onclick="selectCalDate(${d})">${d}${dotHtml}</div>`;
+                html += `<td class="${cellClasses}" onclick="selectCalDate(${d})">
+                            <div class="py-1">
+                                <div class="${innerClasses}" style="${style}" data-date="${dateStr}" data-day="${d}">
+                                    ${d}${dotHtml}
+                                </div>
+                            </div>
+                         </td>`;
+                
+                dayOfWeek++;
             }
 
-            grid.innerHTML = html;
+            // Fill remaining cells
+            while (dayOfWeek < 7) {
+                html += '<td class="border border-gray-100 p-1"></td>';
+                dayOfWeek++;
+            }
+            html += '</tr>';
+
+            tbody.innerHTML = html;
 
             // Render selected date habits
             if (calSelectedDay) {
-                const selDateStr = new Date(calYear, calMonth, calSelectedDay).toISOString().slice(0, 10);
                 const selDate = new Date(calYear, calMonth, calSelectedDay);
+                const selDateStr = getLocalDateString(selDate);
                 document.getElementById('selected-date-text').textContent = selDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
                 renderCalendarHabits(selDateStr);
             } else {
                 document.getElementById('selected-date-text').textContent = `${monthNames[calMonth]} ${calYear}`;
-                document.getElementById('calendar-habit-list').innerHTML = `
-                    <div class="text-center py-6">
-                        <p class="text-gray-400 text-sm">Select a date to view habits</p>
-                    </div>`;
+                const calHabitList = document.getElementById('calendar-habit-list');
+                if(calHabitList) {
+                    calHabitList.innerHTML = `
+                        <div class="text-center py-6">
+                            <p class="text-gray-400 text-sm">Select a date to view habits</p>
+                        </div>`;
+                }
             }
         }
 

@@ -179,16 +179,90 @@
         </section>
 
         <!-- Habits List -->
-        <section class="mt-4 px-6 animate-slide-up delay-300">
+        <section class="mt-8 px-6 animate-slide-up delay-200 w-full relative z-20" style="overflow: visible; background: linear-gradient(180deg, transparent 0%, var(--bg-color) 60%);">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-900">Your Habits</h2>
-                <button id="select-mode-btn" onclick="toggleSelectMode()"
-                    class="text-sm font-semibold text-[var(--primary)] hover:underline focus:outline-none theme-text-update">Select
-                    Multiple</button>
+                <h3 class="text-lg font-bold text-gray-800">Your Habits</h3>
+                <button id="select-mode-btn" onclick="toggleSelectMode()" class="text-sm text-emerald-600 font-semibold focus:outline-none theme-text-update">Select Multiple</button>
             </div>
+            
+            <!-- Habits list -->
+            <div class="pb-8" id="habit-list">
+                <!-- Card Pembungkus Utama -->
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-4">
+                
+                <!-- Contoh Habit 1 (Sudah Selesai) -->
+                <div class="flex items-center justify-between gap-2">
+                    <!-- Kolom Kiri: Info & Streak -->
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center text-lg shrink-0">
+                        <i class="fa-solid fa-book"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="font-bold text-sm text-gray-800 truncate">Read 10 Pages</h3>
+                        <div class="flex items-center gap-1.5 text-[10px] font-medium text-gray-500 mt-0.5">
+                        <span class="flex items-center gap-1 text-orange-500"><i class="fa-solid fa-fire"></i> 12 Days</span>
+                        <span class="text-gray-300">|</span>
+                        <span>100%</span>
+                        </div>
+                    </div>
+                    </div>
 
-            <div class="flex flex-col gap-4 mb-8" id="habit-list">
-                <!-- Dynamically populated by app.js from localStorage -->
+                    <!-- Kolom Tengah: Statistik Mingguan -->
+                    <div class="shrink-0 flex items-center gap-1.5">
+                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div> <!-- Senin -->
+                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div> <!-- Selasa -->
+                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div> <!-- Rabu -->
+                    <div class="w-2.5 h-2.5 rounded-full bg-gray-200"></div>     <!-- Kamis -->
+                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div> <!-- Jumat -->
+                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div> <!-- Sabtu -->
+                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div> <!-- Minggu (Hari Ini - Selesai) -->
+                    </div>
+
+                    <!-- Kolom Kanan: Tombol Aksi (Tencentang) -->
+                    <div class="shrink-0 pl-1">
+                    <button class="w-8 h-8 rounded-full border-2 border-emerald-500 bg-emerald-500 text-white flex items-center justify-center transition-colors">
+                        <i class="fa-solid fa-check text-xs"></i>
+                    </button>
+                    </div>
+                </div>
+
+                <!-- Contoh Habit 2 (Belum Selesai) -->
+                <div class="flex items-center justify-between gap-2">
+                    <!-- Kolom Kiri: Info & Streak -->
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                    <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center text-lg shrink-0">
+                        <i class="fa-solid fa-person-running"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="font-bold text-sm text-gray-800 truncate">Morning Run</h3>
+                        <div class="flex items-center gap-1.5 text-[10px] font-medium text-gray-500 mt-0.5">
+                        <span class="flex items-center gap-1 text-orange-500"><i class="fa-solid fa-fire"></i> 5 Days</span>
+                        <span class="text-gray-300">|</span>
+                        <span>85%</span>
+                        </div>
+                    </div>
+                    </div>
+
+                    <!-- Kolom Tengah: Statistik Mingguan -->
+                    <div class="shrink-0 flex items-center gap-1.5">
+                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div> <!-- Senin -->
+                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div> <!-- Selasa -->
+                    <div class="w-2.5 h-2.5 rounded-full bg-gray-200"></div>     <!-- Rabu -->
+                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div> <!-- Kamis -->
+                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div> <!-- Jumat -->
+                    <div class="w-2.5 h-2.5 rounded-full bg-gray-200"></div>     <!-- Sabtu -->
+                    <div class="w-2.5 h-2.5 rounded-full bg-gray-200"></div>     <!-- Minggu (Hari Ini - Belum) -->
+                    </div>
+
+                    <!-- Kolom Kanan: Tombol Aksi (Kosong) -->
+                    <div class="shrink-0 pl-1">
+                    <button class="w-8 h-8 rounded-full border-2 border-gray-300 text-transparent flex items-center justify-center transition-colors">
+                        <i class="fa-solid fa-check text-xs"></i>
+                    </button>
+                    </div>
+                </div>
+
+                </div>
             </div>
         </section>
     </main>
