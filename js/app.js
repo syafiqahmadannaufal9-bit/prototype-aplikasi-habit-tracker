@@ -418,7 +418,7 @@ async function handleEmailLogin(event) {
             // Simpan data user ke localStorage
             localStorage.setItem('currentUser', JSON.stringify(result.user));
             if (typeof loginRateLimiter !== 'undefined') loginRateLimiter.reset();
-            showToast('Login berhasil! Selamat datang, ' + result.user.fullName + '!');
+            showToast('Login berhasil! Selamat datang, ' + (result.user.username || result.user.email) + '!');
             setTimeout(() => window.location.href = 'index.html', 800);
         } else {
             // === Record failed attempt for rate limiting ===

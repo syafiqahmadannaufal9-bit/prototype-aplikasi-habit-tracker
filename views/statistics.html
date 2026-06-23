@@ -1,463 +1,1071 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Statistics - Habit Tracker</title>
+    <title>Statistics - HabitFlow</title>
+    <meta name="description" content="Lihat statistik dan progres habit kamu secara visual dan informatif.">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="../css/tailwind.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        green: { 500: '#10B981' },
-                        blue: { 500: '#5BA4C9' }
+                        green:   { 500: '#10B981', 50: '#ECFDF5', 100: '#D1FAE5' },
+                        blue:    { 500: '#5BA4C9', 50: '#EFF6FF', 100: '#DBEAFE' },
+                        emerald: { 500: '#10B981', 50: '#ECFDF5' },
+                        amber:   { 500: '#F59E0B', 50: '#FFFBEB' },
+                        rose:    { 500: '#F43F5E', 50: '#FFF1F2' },
+                        violet:  { 500: '#8B5CF6', 50: '#F5F3FF' },
+                        orange:  { 500: '#F97316', 50: '#FFF7ED' },
+                        teal:    { 500: '#14B8A6', 50: '#F0FDFA' },
+                        indigo:  { 500: '#6366F1', 50: '#EEF2FF' },
+                        pink:    { 500: '#EC4899', 50: '#FDF2F8' },
                     }
                 }
             }
         }
     </script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
+
+        /* ── Gradient background header ── */
+        .stats-header-bg {
+            background: linear-gradient(135deg, #10B981 0%, #059669 60%, #047857 100%);
+        }
+        [data-theme="blue"] .stats-header-bg {
+            background: linear-gradient(135deg, #5BA4C9 0%, #3B82F6 60%, #1D4ED8 100%);
+        }
+
+        /* ── Pill Tab ── */
+        .period-tab {
+            flex: 1;
+            padding: 8px 4px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 9999px;
+            transition: all 0.25s ease;
+            color: rgba(255,255,255,0.75);
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+        }
+        .period-tab.active {
+            background: #ffffff;
+            color: #10B981;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        }
+        [data-theme="blue"] .period-tab.active { color: #5BA4C9; }
+
+        /* ── Overview Card ── */
+        .overview-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            border: 1px solid rgba(0,0,0,0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* ── Habit Performance Card ── */
+        .habit-perf-card {
+            border-radius: 20px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: 1px solid rgba(255,255,255,0.6);
+        }
+        .habit-perf-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+        }
+
+        /* ── Mini sparkline SVG ── */
+        .sparkline { width: 100%; height: 32px; }
+
+        /* ── No scrollbar ── */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* ── Slide-up animation ── */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .anim-slide { animation: slideUp 0.5s ease forwards; }
+        .anim-d1 { animation-delay: 0.05s; opacity: 0; }
+        .anim-d2 { animation-delay: 0.10s; opacity: 0; }
+        .anim-d3 { animation-delay: 0.15s; opacity: 0; }
+        .anim-d4 { animation-delay: 0.20s; opacity: 0; }
+        .anim-d5 { animation-delay: 0.25s; opacity: 0; }
+
+        /* ── Insight card ── */
+        .insight-card {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            padding: 14px;
+            border-radius: 16px;
+            background: #fff;
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: transform 0.2s ease;
+        }
+        .insight-card:hover { transform: translateY(-1px); }
+
+        /* ── Bottom Nav Glassmorphic ── */
+        .nav-glass {
+            background: rgba(255,255,255,0.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255,255,255,0.6);
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.07);
+        }
+
+        /* ── Progress Bar Glow ── */
+        .progress-glow {
+            background: linear-gradient(90deg, #10B981, #34D399);
+            border-radius: 9999px;
+            box-shadow: 0 0 6px rgba(16,185,129,0.4);
+        }
+        [data-theme="blue"] .progress-glow {
+            background: linear-gradient(90deg, #5BA4C9, #93C5FD);
+            box-shadow: 0 0 6px rgba(91,164,201,0.4);
+        }
+
+        /* ── Chart Container ── */
+        .chart-card {
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            border: 1px solid rgba(0,0,0,0.04);
+        }
+    </style>
 </head>
-<body class="pb-24">
 
-    <!-- Header -->
-    <header class="px-6 pt-8 pb-4 flex justify-between items-center animate-slide-up relative z-10">
-        <h1 class="text-2xl font-bold text-white">Statistics</h1>
-        <button class="w-10 h-10 rounded-full bg-white/20 text-white backdrop-blur-md border border-white/30 flex items-center justify-center hover:bg-white/30 transition shadow-sm">
-            <i class="fa-solid fa-ellipsis-vertical"></i>
-        </button>
-    </header>
+<body class="pb-28">
 
-    <!-- Time Period Tabs -->
-    <section class="px-6 animate-slide-up delay-100 relative z-10">
-        <div class="flex bg-white/20 backdrop-blur-md border border-white/30 p-1 rounded-full w-full mx-auto" id="period-tabs">
-            <button onclick="setStatPeriod('daily')" class="flex-1 py-2 text-sm font-semibold rounded-full bg-white shadow-sm text-[var(--primary)] transition-all active-tab">Daily</button>
-            <button onclick="setStatPeriod('weekly')" class="flex-1 py-2 text-sm font-medium rounded-full text-white/80 hover:text-white transition-all">Weekly</button>
-            <button onclick="setStatPeriod('monthly')" class="flex-1 py-2 text-sm font-medium rounded-full text-white/80 hover:text-white transition-all">Monthly</button>
-        </div>
-    </section>
-
-    <!-- Overview Cards -->
-    <section class="px-6 mt-6 flex gap-4 animate-slide-up delay-200">
-        <div class="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-500 justify-center items-center flex mb-3 text-lg">
-                <i class="fa-solid fa-fire"></i>
+    <!-- ═══════════════════════════════════════════════ -->
+    <!-- HEADER (gradient background dari theme)        -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <div id="theme-bg-gradient-stats" class="stats-header-bg w-full" style="padding-bottom: 80px;">
+        <header class="px-6 pt-10 pb-4 flex justify-between items-center relative z-10">
+            <div>
+                <p class="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">HabitFlow</p>
+                <h1 class="text-2xl font-black text-white tracking-tight">Statistics</h1>
             </div>
-            <p class="text-sm text-gray-500 font-medium">Longest Streak</p>
-            <h3 id="streak-value" class="text-2xl font-bold text-gray-900 mt-1">0 Days</h3>
-        </div>
-        <div class="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div class="w-10 h-10 rounded-full bg-green-100 text-green-500 justify-center items-center flex mb-3 text-lg" id="completion-icon-wrapper">
-                <i class="fa-solid fa-trophy"></i>
+            <div class="w-10 h-10 rounded-full bg-white/20 text-white backdrop-blur-md border border-white/30
+                        flex items-center justify-center hover:bg-white/30 transition shadow-sm cursor-pointer">
+                <i class="fa-solid fa-sliders text-sm"></i>
             </div>
-            <p class="text-sm text-gray-500 font-medium">Completion</p>
-            <h3 id="completion-value" class="text-2xl font-bold text-gray-900 mt-1">0%</h3>
-        </div>
-    </section>
+        </header>
 
-    <!-- Main Chart -->
-    <section class="px-6 mt-6 animate-slide-up delay-300">
-        <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
-            <div class="flex justify-between items-end mb-4">
+        <!-- Period Tab Pills -->
+        <section class="px-6 pb-6 relative z-10">
+            <div class="flex bg-white/20 backdrop-blur-md border border-white/25 p-1 rounded-full w-full" id="period-tabs">
+                <button id="tab-daily"   class="period-tab active" onclick="setStatPeriod('daily')">Daily</button>
+                <button id="tab-weekly"  class="period-tab"        onclick="setStatPeriod('weekly')">Weekly</button>
+                <button id="tab-monthly" class="period-tab"        onclick="setStatPeriod('monthly')">Monthly</button>
+                <button id="tab-yearly"  class="period-tab"        onclick="setStatPeriod('yearly')">Yearly</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!-- MAIN CONTENT (pulled up over header)           -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <main class="px-4 relative z-20" style="margin-top: -68px;">
+
+        <!-- ── Overview Cards Row ── -->
+        <section class="grid grid-cols-2 gap-3 mb-4 anim-slide anim-d1">
+            <!-- Streak -->
+            <div class="overview-card">
+                <div class="w-10 h-10 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-fire"></i>
+                </div>
                 <div>
-                    <h2 class="text-lg font-bold text-gray-900">Activity</h2>
-                    <p class="text-xs text-gray-500" id="activity-subtitle">Since Apr 2026</p>
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Longest Streak</p>
+                    <h3 id="stat-streak" class="text-2xl font-black text-gray-900 mt-0.5">0 <span class="text-base font-semibold text-gray-400">days</span></h3>
                 </div>
             </div>
-            <div class="h-48 relative w-full">
+            <!-- Completion -->
+            <div class="overview-card">
+                <div id="stat-completion-icon" class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Completion</p>
+                    <h3 id="stat-completion" class="text-2xl font-black text-gray-900 mt-0.5">0<span class="text-base font-semibold text-gray-400">%</span></h3>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── Overview Row 2: Total Habits & Active Days ── -->
+        <section class="grid grid-cols-2 gap-3 mb-5 anim-slide anim-d2">
+            <div class="overview-card">
+                <div class="w-10 h-10 rounded-2xl bg-violet-50 text-violet-500 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-list-check"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Total Habits</p>
+                    <h3 id="stat-total-habits" class="text-2xl font-black text-gray-900 mt-0.5">0</h3>
+                </div>
+            </div>
+            <div class="overview-card">
+                <div class="w-10 h-10 rounded-2xl bg-teal-50 text-teal-500 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-calendar-check"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Active Days</p>
+                    <h3 id="stat-active-days" class="text-2xl font-black text-gray-900 mt-0.5">0</h3>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── Activity Bar Chart ── -->
+        <section class="chart-card mb-5 anim-slide anim-d2">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h2 class="text-base font-bold text-gray-900">Activity Overview</h2>
+                    <p class="text-xs text-gray-400 mt-0.5" id="activity-subtitle">Since today</p>
+                </div>
+                <span id="chart-period-label"
+                      class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1
+                             bg-emerald-50 text-emerald-600 rounded-full">7 Days</span>
+            </div>
+            <div class="relative" style="height: 160px;">
                 <canvas id="activityChart"></canvas>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Category Distribution -->
-    <section class="px-6 mt-6 animate-slide-up delay-400">
-        <h2 class="text-xl font-bold text-gray-900 mb-4">Category Distribution</h2>
-        <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
-            <div class="w-1/2 relative h-32">
-                <canvas id="categoryChart"></canvas>
+        <!-- ── Category Distribution ── -->
+        <section class="mb-5 anim-slide anim-d3">
+            <h2 class="text-base font-bold text-gray-900 mb-3 px-1">Category Distribution</h2>
+            <!--
+                FIX: Kontainer diberi overflow-hidden + max-h agar donut
+                tidak menabrak elemen di bawahnya saat kategori banyak.
+                Canvas dikunci 120×120, legend scrollable max-h-28.
+            -->
+            <div class="chart-card overflow-hidden">
+                <div class="flex items-start gap-4">
+                    <!-- Donut: fixed size, tidak bisa melar -->
+                    <div class="relative shrink-0" style="width:120px; height:120px; min-width:120px;">
+                        <canvas id="categoryChart" width="120" height="120"
+                                style="display:block; width:120px !important; height:120px !important;"></canvas>
+                        <!-- Center label (absolute, tidak mengganggu layout) -->
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span id="cat-center-count" class="text-xl font-black text-gray-900">0</span>
+                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Habits</span>
+                        </div>
+                    </div>
+                    <!-- Legend: scrollable jika kategori banyak -->
+                    <div id="category-legend"
+                         class="flex flex-col gap-2 flex-1 min-w-0 overflow-y-auto no-scrollbar"
+                         style="max-height: 120px;">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
             </div>
-            <div id="category-legend" class="w-1/2 pl-4 flex flex-col gap-3">
+        </section>
+
+        <!-- ── Habit Performance — Kompak (scalable 50+ habits) ── -->
+        <section class="mb-5 anim-slide anim-d4">
+            <div class="flex justify-between items-center mb-3 px-1">
+                <h2 class="text-base font-bold text-gray-900">Habit Performance</h2>
+                <span id="perf-habit-count" class="text-xs font-semibold text-gray-400">0 habits</span>
+            </div>
+
+            <!-- Seksi A: Top Streaks -->
+            <div class="chart-card mb-3">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-xl bg-orange-50 flex items-center justify-center">
+                            <i class="fa-solid fa-fire text-orange-500 text-xs"></i>
+                        </div>
+                        <span class="text-sm font-bold text-gray-900">Top Streaks</span>
+                    </div>
+                    <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Current</span>
+                </div>
+                <!-- Max 3 items — rendered by JS -->
+                <div id="top-streaks-list" class="flex flex-col divide-y divide-gray-50">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+
+            <!-- Seksi B: Needs Attention -->
+            <div class="chart-card mb-3">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-xl bg-red-50 flex items-center justify-center">
+                            <i class="fa-solid fa-triangle-exclamation text-red-400 text-xs"></i>
+                        </div>
+                        <span class="text-sm font-bold text-gray-900">Needs Attention</span>
+                    </div>
+                    <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Monthly %</span>
+                </div>
+                <!-- Max 3 items — rendered by JS -->
+                <div id="needs-attention-list" class="flex flex-col divide-y divide-gray-50">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+
+            <!-- View All Button -->
+            <button onclick="openAllHabitsSheet()"
+                    class="w-full py-3 rounded-2xl border-2 border-dashed border-gray-200 text-sm
+                           font-semibold text-gray-500 hover:border-[var(--primary)] hover:text-[var(--primary)]
+                           transition-all duration-200 flex items-center justify-center gap-2
+                           active:scale-95 theme-text-update">
+                <i class="fa-solid fa-list-ul text-xs"></i>
+                View All Habits (<span id="view-all-count">0</span>)
+            </button>
+        </section>
+
+        <!-- ── Key Insights ── -->
+        <section class="mb-6 anim-slide anim-d5">
+            <h2 class="text-base font-bold text-gray-900 mb-3 px-1">Key Insights</h2>
+            <div id="insights-list" class="flex flex-col gap-3">
                 <!-- Dynamically populated -->
             </div>
-        </div>
-    </section>
-    <!-- Habit Performance Summary -->
-    <section class="px-6 mt-6 animate-slide-up delay-400">
-        <h2 class="text-xl font-bold text-gray-900 mb-4">Habit Performance Summary</h2>
-        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 overflow-x-auto">
-            <table class="w-full text-left border-collapse" style="table-layout: fixed; min-width: 600px;">
-                <thead>
-                    <tr class="bg-gray-50 border-b border-gray-100 text-[10px] text-gray-500 uppercase font-semibold">
-                        <th class="py-3 px-4 w-1/3 rounded-tl-xl">Habit Name</th>
-                        <th class="py-3 px-4 w-1/6 text-center">Completion Rate</th>
-                        <th class="py-3 px-4 w-1/6 text-center">Current Streak</th>
-                        <th class="py-3 px-4 w-1/6 text-center">Longest Streak</th>
-                        <th class="py-3 px-4 w-1/6 text-center rounded-tr-xl">Status Trend</th>
-                    </tr>
-                </thead>
-                <tbody id="performance-table-body" class="divide-y divide-gray-100">
-                    <!-- Dynamically populated via JS -->
-                </tbody>
-            </table>
-        </div>
-    </section>
+        </section>
 
-    <!-- Insights & Reports -->
-    <section class="px-6 mt-6 animate-slide-up delay-400 flex flex-col mb-6">
-        <h2 class="text-xl font-bold text-gray-900 mb-4">Key Insights</h2>
-        <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
-            <ul id="insights-list" class="space-y-3">
+    <!-- ── "View All Habits" Bottom Sheet Modal ── -->
+    <div id="all-habits-sheet"
+         class="fixed inset-0 z-[80] flex items-end justify-center opacity-0 pointer-events-none transition-opacity duration-300"
+         style="background: rgba(17,24,39,0.45); backdrop-filter: blur(4px);"
+         onclick="closeAllHabitsSheet(event)">
+        <div id="all-habits-sheet-panel"
+             class="w-full max-w-lg bg-white rounded-t-3xl shadow-2xl
+                    transform translate-y-full transition-transform duration-300"
+             onclick="event.stopPropagation()"
+             style="max-height: 80vh; display: flex; flex-direction: column;">
+
+            <!-- Handle + Header -->
+            <div class="px-5 pt-4 pb-3 border-b border-gray-100 shrink-0">
+                <div class="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4 cursor-pointer"
+                     onclick="closeAllHabitsSheet()"></div>
+                <div class="flex items-center justify-between">
+                    <h3 class="text-base font-bold text-gray-900">All Habits</h3>
+                    <span id="sheet-habit-count"
+                          class="text-xs font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-500">0</span>
+                </div>
+            </div>
+
+            <!-- Scrollable list -->
+            <div id="all-habits-sheet-list"
+                 class="overflow-y-auto flex-1 px-4 py-3 flex flex-col gap-1">
                 <!-- Dynamically populated -->
-            </ul>
-        </div>
-    </section>
+            </div>
 
-    <!-- Tab Bar -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-2 flex items-center justify-between z-50 shadow-[0_-4px_25px_rgba(0,0,0,0.05)] text-gray-400">
-        <a href="index.html" class="nav-item active:scale-90 transition-transform flex flex-col items-center gap-1 p-2 w-16">
-            <i class="fa-solid fa-house text-xl mb-1"></i>
+            <!-- Close button -->
+            <div class="px-4 py-4 border-t border-gray-50 shrink-0">
+                <button onclick="closeAllHabitsSheet()"
+                        class="w-full py-3 rounded-2xl bg-gray-100 text-sm font-bold text-gray-600
+                               hover:bg-gray-200 transition-colors active:scale-95">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    </main>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!-- BOTTOM NAVIGATION (Glassmorphic)               -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <nav class="nav-glass fixed bottom-0 left-0 right-0 px-6 py-2 flex items-center justify-between z-50 text-gray-400">
+        <a href="index.html" id="nav-home" class="flex flex-col items-center gap-1 p-2 w-16 active:scale-90 transition-transform">
+            <i class="fa-solid fa-house text-xl"></i>
             <span class="text-[10px] font-medium">Home</span>
         </a>
-        <a href="calendar.html" class="nav-item active:scale-90 transition-transform flex flex-col items-center gap-1 p-2 w-16">
-            <i class="fa-regular fa-calendar text-xl mb-1"></i>
+        <a href="calendar.html" id="nav-calendar" class="flex flex-col items-center gap-1 p-2 w-16 active:scale-90 transition-transform">
+            <i class="fa-regular fa-calendar text-xl"></i>
             <span class="text-[10px] font-medium">Calendar</span>
         </a>
-        
-        <div class="w-16 flex justify-center relative -top-6">
-            <a href="add_habit.html" class="w-14 h-14 bg-[var(--primary)] theme-bg-update rounded-full flex items-center justify-center text-white text-2xl shadow-[0_8px_20px_-6px_rgba(0,0,0,0.5)] transform transition hover:scale-105 active:scale-95 border-4 border-white">
+
+        <div class="w-16 flex justify-center relative -top-5">
+            <a href="add_habit.html"
+               class="w-14 h-14 bg-[var(--primary)] theme-bg-update rounded-full flex items-center justify-center
+                      text-white text-2xl shadow-[0_8px_20px_-4px_rgba(16,185,129,0.55)]
+                      transform transition hover:scale-105 active:scale-95 border-4 border-white">
                 <i class="fa-solid fa-plus"></i>
             </a>
         </div>
-        
-        <a href="statistics.html" class="nav-item active:scale-90 transition-transform flex flex-col items-center gap-1 p-2 w-16 text-[var(--primary)] theme-text-update">
-            <i class="fa-solid fa-chart-pie text-xl mb-1"></i>
+
+        <a href="statistics.html" id="nav-stats"
+           class="flex flex-col items-center gap-1 p-2 w-16 active:scale-90 transition-transform text-[var(--primary)] theme-text-update">
+            <i class="fa-solid fa-chart-pie text-xl"></i>
             <span class="text-[10px] font-bold">Stats</span>
         </a>
-        <a href="profile.html" class="nav-item active:scale-90 transition-transform flex flex-col items-center gap-1 p-2 w-16">
-            <i class="fa-regular fa-user text-xl mb-1"></i>
+        <a href="profile.html" id="nav-profile" class="flex flex-col items-center gap-1 p-2 w-16 active:scale-90 transition-transform">
+            <i class="fa-regular fa-user text-xl"></i>
             <span class="text-[10px] font-medium">Profile</span>
         </a>
     </nav>
-    
-    <!-- floating theme toggle removed -->
 
+    <!-- ═══════════════════════════════════════════════ -->
+    <!-- SCRIPTS                                        -->
+    <!-- ═══════════════════════════════════════════════ -->
     <script src="../js/habits.js"></script>
     <script src="../js/app.js"></script>
     <script>
-        let activityChartInstance = null;
-        let categoryChartInstance = null;
-        
-        function getThemeColors() {
-            const style = getComputedStyle(document.body);
-            return {
-                primary: style.getPropertyValue('--primary').trim() || '#10B981',
-                primaryLight: style.getPropertyValue('--primary-light').trim() || '#D1FAE5',
-                accent: style.getPropertyValue('--accent').trim() || '#34D399'
-            };
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // STATISTICS PAGE — Bug-free, No Circular Calls
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    // ── Chart instances (singleton, always destroy before re-create) ──
+    let _activityChart  = null;
+    let _categoryChart  = null;
+
+    // ── Active period state ──
+    let _currentPeriod = 'daily';
+
+    // ─────────────────────────────────────────────────
+    // 1. CATEGORY → COLOR MAP
+    //    Returns { bg, icon, bar, hex } for any category name.
+    // ─────────────────────────────────────────────────
+    const CATEGORY_THEME = {
+        // Key: lowercase keyword → value: { cardBg, iconBg, iconColor, barColor, hex, label }
+        sport:         { cardBg:'#ECFDF5', iconBg:'#D1FAE5', iconColor:'#059669', barColor:'#10B981', hex:'#10B981' },
+        olahraga:      { cardBg:'#ECFDF5', iconBg:'#D1FAE5', iconColor:'#059669', barColor:'#10B981', hex:'#10B981' },
+        health:        { cardBg:'#FFF1F2', iconBg:'#FFE4E6', iconColor:'#E11D48', barColor:'#F43F5E', hex:'#F43F5E' },
+        kesehatan:     { cardBg:'#FFF1F2', iconBg:'#FFE4E6', iconColor:'#E11D48', barColor:'#F43F5E', hex:'#F43F5E' },
+        work:          { cardBg:'#EFF6FF', iconBg:'#DBEAFE', iconColor:'#2563EB', barColor:'#3B82F6', hex:'#3B82F6' },
+        kerja:         { cardBg:'#EFF6FF', iconBg:'#DBEAFE', iconColor:'#2563EB', barColor:'#3B82F6', hex:'#3B82F6' },
+        study:         { cardBg:'#EFF6FF', iconBg:'#DBEAFE', iconColor:'#2563EB', barColor:'#3B82F6', hex:'#3B82F6' },
+        belajar:       { cardBg:'#EFF6FF', iconBg:'#DBEAFE', iconColor:'#2563EB', barColor:'#3B82F6', hex:'#3B82F6' },
+        meditation:    { cardBg:'#FFFBEB', iconBg:'#FDE68A', iconColor:'#D97706', barColor:'#F59E0B', hex:'#F59E0B' },
+        meditate:      { cardBg:'#FFFBEB', iconBg:'#FDE68A', iconColor:'#D97706', barColor:'#F59E0B', hex:'#F59E0B' },
+        meditasi:      { cardBg:'#FFFBEB', iconBg:'#FDE68A', iconColor:'#D97706', barColor:'#F59E0B', hex:'#F59E0B' },
+        art:           { cardBg:'#FFF7ED', iconBg:'#FFEDD5', iconColor:'#EA580C', barColor:'#F97316', hex:'#F97316' },
+        seni:          { cardBg:'#FFF7ED', iconBg:'#FFEDD5', iconColor:'#EA580C', barColor:'#F97316', hex:'#F97316' },
+        finance:       { cardBg:'#F0FDFA', iconBg:'#CCFBF1', iconColor:'#0D9488', barColor:'#14B8A6', hex:'#14B8A6' },
+        keuangan:      { cardBg:'#F0FDFA', iconBg:'#CCFBF1', iconColor:'#0D9488', barColor:'#14B8A6', hex:'#14B8A6' },
+        entertainment: { cardBg:'#F5F3FF', iconBg:'#EDE9FE', iconColor:'#7C3AED', barColor:'#8B5CF6', hex:'#8B5CF6' },
+        hiburan:       { cardBg:'#F5F3FF', iconBg:'#EDE9FE', iconColor:'#7C3AED', barColor:'#8B5CF6', hex:'#8B5CF6' },
+        social:        { cardBg:'#FDF2F8', iconBg:'#FCE7F3', iconColor:'#DB2777', barColor:'#EC4899', hex:'#EC4899' },
+        sosial:        { cardBg:'#FDF2F8', iconBg:'#FCE7F3', iconColor:'#DB2777', barColor:'#EC4899', hex:'#EC4899' },
+        reading:       { cardBg:'#EEF2FF', iconBg:'#E0E7FF', iconColor:'#4338CA', barColor:'#6366F1', hex:'#6366F1' },
+        membaca:       { cardBg:'#EEF2FF', iconBg:'#E0E7FF', iconColor:'#4338CA', barColor:'#6366F1', hex:'#6366F1' },
+    };
+
+    // Palette fallback untuk kategori tak dikenal
+    const FALLBACK_PALETTE = [
+        { cardBg:'#ECFDF5', iconBg:'#D1FAE5', iconColor:'#059669', barColor:'#10B981', hex:'#10B981' },
+        { cardBg:'#EFF6FF', iconBg:'#DBEAFE', iconColor:'#2563EB', barColor:'#3B82F6', hex:'#3B82F6' },
+        { cardBg:'#FFFBEB', iconBg:'#FDE68A', iconColor:'#D97706', barColor:'#F59E0B', hex:'#F59E0B' },
+        { cardBg:'#FFF7ED', iconBg:'#FFEDD5', iconColor:'#EA580C', barColor:'#F97316', hex:'#F97316' },
+        { cardBg:'#F5F3FF', iconBg:'#EDE9FE', iconColor:'#7C3AED', barColor:'#8B5CF6', hex:'#8B5CF6' },
+        { cardBg:'#FDF2F8', iconBg:'#FCE7F3', iconColor:'#DB2777', barColor:'#EC4899', hex:'#EC4899' },
+        { cardBg:'#F0FDFA', iconBg:'#CCFBF1', iconColor:'#0D9488', barColor:'#14B8A6', hex:'#14B8A6' },
+        { cardBg:'#FFF1F2', iconBg:'#FFE4E6', iconColor:'#E11D48', barColor:'#F43F5E', hex:'#F43F5E' },
+    ];
+    let _fallbackIdx = 0;
+    const _catFallbackCache = {};
+
+    function getCategoryTheme(catName) {
+        const key = (catName || 'other').toLowerCase().trim();
+        if (CATEGORY_THEME[key]) return CATEGORY_THEME[key];
+        // Assign a stable fallback per unknown category name
+        if (!_catFallbackCache[key]) {
+            _catFallbackCache[key] = FALLBACK_PALETTE[_fallbackIdx % FALLBACK_PALETTE.length];
+            _fallbackIdx++;
         }
+        return _catFallbackCache[key];
+    }
 
-        function initCharts(period = 'daily') {
-            const colors = getThemeColors();
-            const stats = getStatsData(period);
-            
-            // Adjust Completion Icon color Based on Theme
-            const completionWrapper = document.getElementById('completion-icon-wrapper');
-            if (completionWrapper) {
-                 completionWrapper.style.backgroundColor = colors.primaryLight;
-                 completionWrapper.style.color = colors.primary;
-            }
+    // ─────────────────────────────────────────────────
+    // 2. CHART THEME COLORS (respects --primary var)
+    // ─────────────────────────────────────────────────
+    function getThemeColor() {
+        const style = getComputedStyle(document.body);
+        return style.getPropertyValue('--primary').trim() || '#10B981';
+    }
 
-            // Update overview cards with real data
-            document.getElementById('streak-value').textContent = `${stats.longestStreak} Days`;
-            document.getElementById('completion-value').textContent = `${stats.completionRate}%`;
-            
-            // Account opening date
-            const loginDate = getLoginDate();
-            const loginObj = new Date(loginDate);
-            document.getElementById('activity-subtitle').innerText = `Since ${loginObj.toLocaleString('default', { month: 'short', year: 'numeric' })}`;
+    // ─────────────────────────────────────────────────
+    // 3. PERIOD TAB HANDLER — SIMPLE, NO CIRCULAR CALL
+    //    setStatPeriod() only:
+    //      (a) updates tab UI
+    //      (b) calls renderStats() once
+    //    renderStats() never calls setStatPeriod().
+    // ─────────────────────────────────────────────────
+    function setStatPeriod(period) {
+        if (period === _currentPeriod) return; // guard: same tab clicked twice
+        _currentPeriod = period;
 
-            // Activity Bar Chart
-            const ctxActivity = document.getElementById('activityChart').getContext('2d');
-            
-            if (activityChartInstance) activityChartInstance.destroy();
-            
-            activityChartInstance = new Chart(ctxActivity, {
-                type: 'bar',
-                data: {
-                    labels: stats.labels,
-                    datasets: [{
-                        label: 'Completion',
-                        data: stats.data,
-                        backgroundColor: colors.primary,
-                        borderRadius: 6,
-                        borderSkipped: false,
-                        barThickness: period === 'monthly' ? 16 : 12
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: '#111827',
-                            padding: 10,
-                            displayColors: false,
-                            callbacks: {
-                                label: function(context) { return context.raw + '%'; }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100,
-                            grid: { color: '#F3F4F6', drawBorder: false },
-                            border: { display: false },
-                            ticks: { display: false }
-                        },
-                        x: {
-                            grid: { display: false, drawBorder: false },
-                            border: { display: false },
-                            ticks: { color: '#9CA3AF', font: { family: 'Inter', size: 11, weight: '500' } }
-                        }
-                    }
-                }
-            });
-
-            // Category Doughnut Chart — from real data
-            const ctxCategory = document.getElementById('categoryChart').getContext('2d');
-            
-            if (categoryChartInstance) categoryChartInstance.destroy();
-
-            const catEntries = Object.entries(stats.catCounts);
-            const catLabels = catEntries.length > 0 ? catEntries.map(e => e[0]) : ['No data'];
-            const catData = catEntries.length > 0 ? catEntries.map(e => e[1]) : [1];
-            
-            // Generate colors for each category
-            const paletteColors = [colors.primary, colors.accent, '#F59E0B', '#8B5CF6', '#EF4444', '#EC4899', '#14B8A6', '#6366F1', '#E5E7EB'];
-            const catColors = catLabels.map((_, i) => paletteColors[i % paletteColors.length]);
-
-            // Update legend
-            const legendContainer = document.getElementById('category-legend');
-            if (legendContainer) {
-                legendContainer.innerHTML = catLabels.map((label, i) => `
-                    <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full shrink-0" style="background-color: ${catColors[i]}"></span>
-                        <span class="text-sm font-medium text-gray-700 truncate">${label}</span>
-                    </div>
-                `).join('');
-            }
-            
-            categoryChartInstance = new Chart(ctxCategory, {
-                type: 'doughnut',
-                data: {
-                    labels: catLabels,
-                    datasets: [{
-                        data: catData,
-                        backgroundColor: catColors,
-                        borderWidth: 0,
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '75%',
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: '#111827',
-                            padding: 10,
-                            displayColors: true
-                        }
-                    }
-                }
-            });
-            
-            // Generate Performance Table
-            generatePerformanceTable();
-
-            // Generate Insights
-            generateInsights(stats, period);
-        }
-
-        function generateInsights(stats, period) {
-            const list = document.getElementById('insights-list');
-            if (!list) return;
-            list.innerHTML = '';
-            
-            const theme = document.documentElement.getAttribute('data-theme') || 'green';
-            const isBlue = theme === 'blue';
-            
-            // 1. Trend Insight
-            if (stats.data.length > 1) {
-                const last = stats.data[stats.data.length - 1];
-                const prev = stats.data[stats.data.length - 2];
-                let diff = last - prev;
-                let trendMsg = diff >= 0 
-                    ? `<span class="${isBlue ? 'text-[#5BA4C9]' : 'text-[#10B981]'} font-bold"><i class="fa-solid fa-arrow-trend-up mr-1"></i> Up ${diff}%</span> from previous period.`
-                    : `<span class="text-red-500 font-bold"><i class="fa-solid fa-arrow-trend-down mr-1"></i> Down ${Math.abs(diff)}%</span> from previous period. Keep pushing!`;
-                addInsight(list, "Performance Trend", trendMsg, 'fa-chart-line', 'primary');
-            }
-
-            // 2. Category Focus
-            const catEntries = Object.entries(stats.catCounts);
-            if (catEntries.length > 0) {
-                catEntries.sort((a,b) => b[1] - a[1]);
-                const bestCat = catEntries[0][0];
-                addInsight(list, "Primary Focus Area", `Most of your habits belong to the <b>${bestCat}</b> category.`, 'fa-bullseye', 'orange');
-            }
-            
-            // 3. Consistency
-            if (stats.longestStreak > 2) {
-                addInsight(list, "Strong Consistency", `You reached a ${stats.longestStreak}-day perfect streak. Outstanding!`, 'fa-fire', 'red');
+        // Update tab UI — swap active class
+        ['daily','weekly','monthly','yearly'].forEach(p => {
+            const tab = document.getElementById(`tab-${p}`);
+            if (!tab) return;
+            if (p === period) {
+                tab.classList.add('active');
             } else {
-                addInsight(list, "Building Consistency", "Try linking a new habit to an existing routine to build a streak.", 'fa-lightbulb', 'yellow');
+                tab.classList.remove('active');
             }
-        }
-
-        function generatePerformanceTable() {
-            const tbody = document.getElementById('performance-table-body');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-
-            const habits = getHabits();
-            if (habits.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-500 text-sm">No habits available</td></tr>`;
-                return;
-            }
-
-            const todayStr = getLocalDateString();
-            const c = getCompletions();
-
-            let html = '';
-            habits.forEach(habit => {
-                // Kalkulasi
-                const accuracy = getMonthlyAccuracy(habit.id, todayStr);
-                const currentStreak = getHabitStreak(habit.id, todayStr);
-                const longestStreak = getHabitLongestStreak(habit.id);
-
-                // Hitung Trend (7 hari terakhir vs 7 hari sebelumnya)
-                let current7 = 0;
-                let prev7 = 0;
-                const todayDate = new Date(todayStr);
-                for(let i=0; i<14; i++) {
-                    let d = new Date(todayDate);
-                    d.setDate(d.getDate() - i);
-                    let dStr = getLocalDateString(d);
-                    if(c[dStr] && c[dStr][habit.id]) {
-                        if(i < 7) current7++;
-                        else prev7++;
-                    }
-                }
-                const isUp = current7 >= prev7;
-
-                html += `
-                <tr class="hover:bg-gray-50/50 transition-colors">
-                    <td class="py-4 px-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center text-sm shrink-0">
-                                ${habit.iconHtml || '<i class="fa-solid fa-star"></i>'}
-                            </div>
-                            <span class="font-bold text-sm text-gray-800 truncate">${habit.name}</span>
-                        </div>
-                    </td>
-                    <td class="py-4 px-4 text-center">
-                        <div class="flex flex-col items-center gap-1.5">
-                            <span class="text-xs font-bold text-gray-700">${accuracy}%</span>
-                            <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                                <div class="bg-[var(--primary)] h-full rounded-full" style="width: ${accuracy}%"></div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="py-4 px-4 text-center">
-                        <span class="inline-flex items-center gap-1 text-xs font-bold text-orange-500 bg-orange-50 px-2 py-1 rounded-md">
-                            <i class="fa-solid fa-fire"></i> ${currentStreak}
-                        </span>
-                    </td>
-                    <td class="py-4 px-4 text-center">
-                        <span class="inline-flex items-center gap-1 text-xs font-bold text-yellow-600 bg-yellow-50 px-2 py-1 rounded-md">
-                            <i class="fa-solid fa-trophy"></i> ${longestStreak}
-                        </span>
-                    </td>
-                    <td class="py-4 px-4 text-center">
-                        ${isUp 
-                            ? '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded border border-emerald-100 uppercase tracking-wide"><i class="fa-solid fa-caret-up"></i> Up</span>'
-                            : '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-50 px-2 py-1 rounded border border-red-100 uppercase tracking-wide"><i class="fa-solid fa-caret-down"></i> Down</span>'
-                        }
-                    </td>
-                </tr>
-                `;
-            });
-
-            tbody.innerHTML = html;
-        }
-
-        function addInsight(list, title, msg, iconClass, colorMode) {
-            const theme = document.documentElement.getAttribute('data-theme') || 'green';
-            let iconBg = theme === 'blue' ? 'bg-blue-50 text-[#5BA4C9]' : 'bg-green-50 text-[#10B981]';
-            if(colorMode === 'orange') iconBg = 'bg-orange-50 text-orange-500';
-            if(colorMode === 'yellow') iconBg = 'bg-yellow-50 text-yellow-500';
-            if(colorMode === 'red') iconBg = 'bg-red-50 text-red-500';
-
-            list.innerHTML += `
-                <li class="flex gap-4 p-3 bg-gray-50 rounded-2xl border border-gray-100 items-start shadow-sm transition-transform hover:-translate-y-0.5">
-                    <div class="w-10 h-10 rounded-full flex shrink-0 items-center justify-center text-lg ${iconBg}">
-                        <i class="fa-solid ${iconClass}"></i>
-                    </div>
-                    <div>
-                        <h4 class="text-gray-900 font-bold mb-1 text-sm">${title}</h4>
-                        <p class="text-xs text-gray-500 leading-snug">${msg}</p>
-                    </div>
-                </li>
-            `;
-        }
-        
-        // Handle Tab Swapping
-        let currentPeriod = 'daily';
-        function setStatPeriod(newPeriod) {
-            currentPeriod = newPeriod;
-            
-            // Update UI tabs
-            const tabs = document.getElementById('period-tabs').querySelectorAll('button');
-            const themeColors = getThemeColors();
-            
-            tabs.forEach(tab => {
-                if(tab.innerText.toLowerCase() === newPeriod) {
-                    tab.className = `flex-1 py-2 text-sm font-semibold rounded-full bg-white shadow-sm transition-all active-tab`;
-                    tab.style.color = themeColors.primary;
-                } else {
-                    tab.className = `flex-1 py-2 text-sm font-medium rounded-full text-white/80 hover:text-white transition-all`;
-                    tab.style.color = '';
-                }
-            });
-            
-            // Re-init chart with new data
-            initCharts(newPeriod);
-        }
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Sync habits from Supabase before rendering charts
-            await syncHabitsFromSupabase();
-            initCharts(currentPeriod);
-            
-            // Re-render charts when theme changes
-            document.addEventListener('themeChanged', () => {
-                setTimeout(() => {
-                    const activeTab = document.querySelector('.active-tab');
-                    if (activeTab) {
-                        const themeColors = getThemeColors();
-                        activeTab.style.color = themeColors.primary;
-                    }
-                    initCharts(currentPeriod);
-                }, 100);
-            });
         });
+
+        // Update period label badge
+        const labels = { daily:'7 Days', weekly:'4 Weeks', monthly:'6 Months', yearly:'12 Months' };
+        const badge = document.getElementById('chart-period-label');
+        if (badge) badge.textContent = labels[period] || '';
+
+        // Re-render with new period — one call, no recursion
+        renderStats(period);
+    }
+
+    // ─────────────────────────────────────────────────
+    // 4. GENERATE MINI SPARKLINE SVG (pure decoration)
+    //    7 data points → polyline SVG path
+    // ─────────────────────────────────────────────────
+    function buildSparkline(values, color) {
+        if (!values || values.length === 0) return '';
+        const w = 100, h = 32;
+        const max = Math.max(...values, 1);
+        const pts = values.map((v, i) => {
+            const x = (i / (values.length - 1)) * w;
+            const y = h - (v / max) * (h - 4);
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(' ');
+        return `
+        <svg viewBox="0 0 100 32" class="sparkline" preserveAspectRatio="none">
+            <defs>
+                <linearGradient id="sg-${color.replace('#','')}" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="${color}" stop-opacity="0.25"/>
+                    <stop offset="100%" stop-color="${color}" stop-opacity="0.02"/>
+                </linearGradient>
+            </defs>
+            <polygon points="${pts} 100,32 0,32"
+                fill="url(#sg-${color.replace('#','')})" />
+            <polyline points="${pts}"
+                fill="none" stroke="${color}" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`;
+    }
+
+    // ─────────────────────────────────────────────────
+    // 5. COMPUTE PER-HABIT 7-DAY SPARKLINE DATA
+    // ─────────────────────────────────────────────────
+    function getHabitSparklineData(habitId) {
+        const c = getCompletions();
+        const result = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const ds = getLocalDateString(d);
+            result.push((c[ds] && c[ds][habitId]) ? 1 : 0);
+        }
+        return result;
+    }
+
+    // ─────────────────────────────────────────────────
+    // 6. RENDER ACTIVITY CHART
+    // ─────────────────────────────────────────────────
+    function renderActivityChart(stats, period) {
+        const canvas = document.getElementById('activityChart');
+        if (!canvas) return;
+
+        // ✅ ANTI-BUG: Destroy old instance before creating new
+        if (_activityChart) { _activityChart.destroy(); _activityChart = null; }
+
+        const primaryColor = getThemeColor();
+        const ctx = canvas.getContext('2d');
+
+        _activityChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: stats.labels,
+                datasets: [{
+                    label: 'Completion %',
+                    data: stats.data,
+                    backgroundColor: (context) => {
+                        const val = context.raw;
+                        const alpha = 0.5 + (val / 100) * 0.5;
+                        return `${primaryColor}${Math.round(alpha * 255).toString(16).padStart(2,'0')}`;
+                    },
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    barThickness: period === 'monthly' || period === 'yearly' ? 16 : 22,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 600, easing: 'easeOutQuart' },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#111827',
+                        padding: 10,
+                        cornerRadius: 10,
+                        displayColors: false,
+                        callbacks: { label: ctx => `${ctx.raw}% selesai` }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true, max: 100,
+                        grid: { color: '#F3F4F6' },
+                        border: { display: false },
+                        ticks: { display: false }
+                    },
+                    x: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: { color: '#9CA3AF', font: { size: 11, weight: '600' } }
+                    }
+                }
+            }
+        });
+    }
+
+    // ─────────────────────────────────────────────────
+    // 7. RENDER CATEGORY DOUGHNUT CHART
+    // ─────────────────────────────────────────────────
+    function renderCategoryChart(catCounts, habits) {
+        const canvas = document.getElementById('categoryChart');
+        if (!canvas) return;
+
+        // ✅ ANTI-BUG: Destroy old instance before creating new
+        if (_categoryChart) { _categoryChart.destroy(); _categoryChart = null; }
+
+        const catEntries = Object.entries(catCounts);
+        const catLabels  = catEntries.length > 0 ? catEntries.map(e => e[0]) : ['Belum ada'];
+        const catData    = catEntries.length > 0 ? catEntries.map(e => e[1]) : [1];
+        const catColors  = catLabels.map(l => getCategoryTheme(l).hex);
+
+        // Update center count
+        const centerEl = document.getElementById('cat-center-count');
+        if (centerEl) centerEl.textContent = habits.length;
+
+        // Update legend
+        const legendEl = document.getElementById('category-legend');
+        if (legendEl) {
+            // ✅ ANTI-BUG: clear before inserting
+            legendEl.innerHTML = '';
+            legendEl.innerHTML = catLabels.map((label, i) => {
+                const theme = getCategoryTheme(label);
+                return `
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${theme.hex}"></span>
+                    <span class="text-xs font-semibold text-gray-700 truncate capitalize">${label}</span>
+                    <span class="text-xs text-gray-400 ml-auto shrink-0">${catData[i]}</span>
+                </div>`;
+            }).join('');
+        }
+
+        const ctx = canvas.getContext('2d');
+        _categoryChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: catLabels,
+                datasets: [{
+                    data: catData,
+                    backgroundColor: catColors,
+                    borderWidth: 3,
+                    borderColor: '#F8FAFC',
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: false,
+                cutout: '72%',
+                animation: { duration: 700 },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#111827',
+                        padding: 10,
+                        cornerRadius: 10,
+                    }
+                }
+            }
+        });
+    }
+
+    // ─────────────────────────────────────────────────
+    // 8A. HELPER: Satu baris list item tipis (h-14) untuk
+    //     Top Streaks dan Needs Attention.
+    //     Tidak pernah memanggil renderStats → aman.
+    // ─────────────────────────────────────────────────
+    function buildCompactRow(habit, rightLabel, rightSublabel, rightColor) {
+        const theme = getCategoryTheme(habit.category || 'other');
+        return `
+        <div class="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+            <!-- Ikon kategori melingkar, warna per kategori -->
+            <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-sm"
+                 style="background:${theme.iconBg}; color:${theme.iconColor}">
+                ${habit.iconHtml || '<i class="fa-solid fa-star"></i>'}
+            </div>
+            <!-- Nama + kategori -->
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-bold text-gray-900 truncate leading-tight">${habit.name}</p>
+                <p class="text-[10px] text-gray-400 capitalize mt-0.5">${habit.category || 'General'}</p>
+            </div>
+            <!-- Nilai kanan -->
+            <div class="text-right shrink-0">
+                <p class="text-base font-black" style="color:${rightColor}">${rightLabel}</p>
+                <p class="text-[10px] text-gray-400">${rightSublabel}</p>
+            </div>
+        </div>`;
+    }
+
+    // ─────────────────────────────────────────────────
+    // 8B. RENDER COMPACT PERFORMANCE SECTION
+    //     - Top 3 Streaks
+    //     - Top 3 Needs Attention (completion rate terendah)
+    //     - "View All" count
+    //     Tidak ada infinite scroll, scalable untuk 50+ habits.
+    // ─────────────────────────────────────────────────
+    function renderHabitPerfCards(habits) {
+        // ✅ ANTI-BUG: clear semua kontainer dulu
+        const streaksList   = document.getElementById('top-streaks-list');
+        const attentionList = document.getElementById('needs-attention-list');
+        const countEl       = document.getElementById('perf-habit-count');
+        const viewAllCount  = document.getElementById('view-all-count');
+
+        if (!streaksList || !attentionList) return;
+        streaksList.innerHTML   = '';
+        attentionList.innerHTML = '';
+
+        if (countEl)    countEl.textContent    = `${habits.length} habit${habits.length !== 1 ? 's' : ''}`;
+        if (viewAllCount) viewAllCount.textContent = habits.length;
+
+        if (habits.length === 0) {
+            const emptyHtml = `
+            <div class="text-center py-6">
+                <i class="fa-solid fa-seedling text-gray-200 text-2xl mb-2"></i>
+                <p class="text-xs text-gray-400 font-medium">Belum ada habit</p>
+            </div>`;
+            streaksList.innerHTML   = emptyHtml;
+            attentionList.innerHTML = emptyHtml;
+            return;
+        }
+
+        const today = getLocalDateString();
+
+        // Hitung streak + accuracy untuk tiap habit — satu kali, tidak memanggil render ulang
+        const habitsWithData = habits.map(h => ({
+            ...h,
+            streak  : getHabitStreak(h.id, today),
+            accuracy: getMonthlyAccuracy(h.id, today)
+        }));
+
+        // ── Seksi A: Top 3 by streak (desc) ──
+        const topStreaks = [...habitsWithData]
+            .sort((a, b) => b.streak - a.streak)
+            .slice(0, 3);
+
+        if (topStreaks.length === 0 || topStreaks[0].streak === 0) {
+            streaksList.innerHTML = `
+            <div class="text-center py-5">
+                <p class="text-xs text-gray-400">Belum ada streak aktif. Mulai hari ini! 🔥</p>
+            </div>`;
+        } else {
+            streaksList.innerHTML = topStreaks
+                .map(h => buildCompactRow(
+                    h,
+                    `${h.streak}d`,   // label besar
+                    'streak',          // sub-label
+                    '#F97316'          // warna oranye untuk streak
+                ))
+                .join('');
+        }
+
+        // ── Seksi B: Top 3 Needs Attention (accuracy asc) ──
+        // Hanya tampilkan habit yang sudah punya data (login > 0 hari)
+        const needsAttention = [...habitsWithData]
+            .sort((a, b) => a.accuracy - b.accuracy)
+            .slice(0, 3);
+
+        attentionList.innerHTML = needsAttention
+            .map(h => {
+                const pct = h.accuracy;
+                // Warna merah jika < 50%, kuning jika 50-79%, hijau jika ≥ 80%
+                const color = pct < 50 ? '#EF4444' : pct < 80 ? '#F59E0B' : '#10B981';
+                return buildCompactRow(
+                    h,
+                    `${pct}%`,       // label besar
+                    'bulan ini',     // sub-label
+                    color
+                );
+            })
+            .join('');
+    }
+
+    // ─────────────────────────────────────────────────
+    // 8C. BOTTOM SHEET: "View All Habits"
+    //     openAllHabitsSheet() — dipanggil dari onclick tombol
+    //     closeAllHabitsSheet(e) — dipanggil dari overlay click
+    //     Tidak terhubung ke renderStats → tidak bisa loop.
+    // ─────────────────────────────────────────────────
+    function openAllHabitsSheet() {
+        const sheet = document.getElementById('all-habits-sheet');
+        const panel = document.getElementById('all-habits-sheet-panel');
+        if (!sheet || !panel) return;
+
+        // Populate list terlebih dahulu
+        const listEl   = document.getElementById('all-habits-sheet-list');
+        const countEl  = document.getElementById('sheet-habit-count');
+        const today    = getLocalDateString();
+        const habits   = getHabits();
+        const c        = getCompletions();
+
+        if (countEl) countEl.textContent = habits.length;
+
+        // ✅ ANTI-BUG: clear before render
+        if (listEl) {
+            listEl.innerHTML = '';
+
+            if (habits.length === 0) {
+                listEl.innerHTML = `
+                <div class="text-center py-10">
+                    <i class="fa-solid fa-seedling text-gray-200 text-3xl mb-3"></i>
+                    <p class="text-sm text-gray-400 font-medium">Belum ada habit</p>
+                    <p class="text-xs text-gray-300 mt-1">Tambahkan lewat tombol +</p>
+                </div>`;
+            } else {
+                // Render semua habit — kompak satu baris, scalable 50+
+                let html = '';
+                habits.forEach(h => {
+                    const theme    = getCategoryTheme(h.category || 'other');
+                    const streak   = getHabitStreak(h.id, today);
+                    const accuracy = getMonthlyAccuracy(h.id, today);
+                    const doneToday= !!(c[today] && c[today][h.id]);
+                    html += `
+                    <div class="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0">
+                        <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-sm"
+                             style="background:${theme.iconBg}; color:${theme.iconColor}">
+                            ${h.iconHtml || '<i class="fa-solid fa-star"></i>'}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-bold text-gray-900 truncate">${h.name}</p>
+                            <p class="text-[10px] text-gray-400 capitalize">${h.category || 'General'}</p>
+                        </div>
+                        <div class="text-right shrink-0 flex flex-col items-end gap-0.5">
+                            <span class="text-xs font-black text-gray-700">${accuracy}%</span>
+                            <div class="flex items-center gap-1">
+                                <i class="fa-solid fa-fire text-orange-400" style="font-size:9px"></i>
+                                <span class="text-[10px] font-bold text-gray-500">${streak}d</span>
+                            </div>
+                        </div>
+                        ${ doneToday
+                            ? `<div class="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                                    style="background:${theme.barColor}">
+                                   <i class="fa-solid fa-check text-white" style="font-size:8px"></i>
+                               </div>`
+                            : `<div class="w-5 h-5 rounded-full border-2 border-gray-200 shrink-0"></div>`
+                        }
+                    </div>`;
+                });
+                listEl.innerHTML = html;
+            }
+        }
+
+        // Tampilkan sheet dengan animasi
+        sheet.classList.remove('opacity-0', 'pointer-events-none');
+        sheet.classList.add('opacity-100');
+        requestAnimationFrame(() => {
+            panel.classList.remove('translate-y-full');
+            panel.classList.add('translate-y-0');
+        });
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeAllHabitsSheet(e) {
+        // Jika dipanggil dari overlay click, cek target
+        if (e && e.target !== document.getElementById('all-habits-sheet')) return;
+        const sheet = document.getElementById('all-habits-sheet');
+        const panel = document.getElementById('all-habits-sheet-panel');
+        if (!sheet || !panel) return;
+
+        panel.classList.remove('translate-y-0');
+        panel.classList.add('translate-y-full');
+        setTimeout(() => {
+            sheet.classList.add('opacity-0', 'pointer-events-none');
+            sheet.classList.remove('opacity-100');
+        }, 280);
+        document.body.style.overflow = '';
+    }
+
+    // Expose ke global (dipanggil dari onclick di HTML)
+    window.openAllHabitsSheet  = openAllHabitsSheet;
+    window.closeAllHabitsSheet = closeAllHabitsSheet;
+
+    // ─────────────────────────────────────────────────
+    // 9. RENDER KEY INSIGHTS
+    // ─────────────────────────────────────────────────
+    function renderInsights(stats) {
+        const container = document.getElementById('insights-list');
+        if (!container) return;
+
+        // ✅ ANTI-BUG: clear before render
+        container.innerHTML = '';
+
+        const insights = [];
+
+        // Trend
+        if (stats.data.length >= 2) {
+            const last = stats.data[stats.data.length - 1];
+            const prev = stats.data[stats.data.length - 2];
+            const diff = last - prev;
+            if (diff >= 0) {
+                insights.push({
+                    icon: 'fa-arrow-trend-up',
+                    iconBg: '#ECFDF5', iconColor: '#059669',
+                    title: 'Performa Meningkat 🚀',
+                    body: `Completion rate naik <strong>${diff}%</strong> dari periode sebelumnya. Pertahankan!`
+                });
+            } else {
+                insights.push({
+                    icon: 'fa-arrow-trend-down',
+                    iconBg: '#FFF1F2', iconColor: '#E11D48',
+                    title: 'Perlu Perhatian ⚠️',
+                    body: `Completion rate turun <strong>${Math.abs(diff)}%</strong>. Yuk, semangat lagi!`
+                });
+            }
+        }
+
+        // Streak
+        if (stats.longestStreak >= 7) {
+            insights.push({
+                icon: 'fa-fire',
+                iconBg: '#FFF7ED', iconColor: '#EA580C',
+                title: `Streak Luar Biasa 🔥`,
+                body: `Streak terpanjang kamu <strong>${stats.longestStreak} hari</strong>. Konsistensi adalah kunci!`
+            });
+        } else if (stats.longestStreak >= 3) {
+            insights.push({
+                icon: 'fa-fire',
+                iconBg: '#FFFBEB', iconColor: '#D97706',
+                title: 'Mulai Terbentuk 💪',
+                body: `Streak <strong>${stats.longestStreak} hari</strong>. Teruskan sampai 7 hari untuk membentuk kebiasaan!`
+            });
+        } else {
+            insights.push({
+                icon: 'fa-lightbulb',
+                iconBg: '#EFF6FF', iconColor: '#2563EB',
+                title: 'Tips Memulai Streak ✨',
+                body: 'Kaitkan habit baru dengan rutinitas pagi yang sudah ada untuk memulai streak.'
+            });
+        }
+
+        // Category focus
+        const catEntries = Object.entries(stats.catCounts);
+        if (catEntries.length > 0) {
+            catEntries.sort((a, b) => b[1] - a[1]);
+            const top = catEntries[0][0];
+            const theme = getCategoryTheme(top);
+            insights.push({
+                icon: 'fa-bullseye',
+                iconBg: theme.iconBg, iconColor: theme.iconColor,
+                title: 'Fokus Utama Kamu 🎯',
+                body: `Kategori terbanyak: <strong class="capitalize">${top}</strong>. Diversifikasi habit untuk pertumbuhan seimbang.`
+            });
+        }
+
+        // Overall completion tip
+        if (stats.completionRate < 50) {
+            insights.push({
+                icon: 'fa-seedling',
+                iconBg: '#ECFDF5', iconColor: '#059669',
+                title: 'Mulai dari yang Kecil 🌱',
+                body: 'Kurangi jumlah habit, fokus pada 2-3 habit utama dulu. Kualitas lebih penting dari kuantitas.'
+            });
+        } else if (stats.completionRate >= 80) {
+            insights.push({
+                icon: 'fa-star',
+                iconBg: '#FFFBEB', iconColor: '#D97706',
+                title: 'Performa Top! ⭐',
+                body: `<strong>${stats.completionRate}%</strong> completion rate — kamu jauh di atas rata-rata. Luar biasa!`
+            });
+        }
+
+        // Render
+        let html = '';
+        insights.forEach((ins, idx) => {
+            html += `
+            <div class="insight-card" style="animation:slideUp 0.4s ease ${0.05+idx*0.07}s forwards; opacity:0;">
+                <div class="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 text-base"
+                     style="background:${ins.iconBg}; color:${ins.iconColor}">
+                    <i class="fa-solid ${ins.icon}"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h4 class="text-sm font-bold text-gray-900">${ins.title}</h4>
+                    <p class="text-xs text-gray-500 mt-0.5 leading-relaxed">${ins.body}</p>
+                </div>
+            </div>`;
+        });
+
+        container.innerHTML = html;
+    }
+
+    // ─────────────────────────────────────────────────
+    // 10. MASTER RENDER FUNCTION
+    //     Called ONCE on load, and ONCE per tab click.
+    //     No auto-polling, no recursive calls.
+    // ─────────────────────────────────────────────────
+    function renderStats(period) {
+        const habits = getHabits();
+        const stats  = getStatsData(period);
+
+        // Overview numbers
+        const el = id => document.getElementById(id);
+        if (el('stat-streak'))       el('stat-streak').innerHTML = `${stats.longestStreak} <span class="text-base font-semibold text-gray-400">days</span>`;
+        if (el('stat-completion'))   el('stat-completion').innerHTML = `${stats.completionRate}<span class="text-base font-semibold text-gray-400">%</span>`;
+        if (el('stat-total-habits')) el('stat-total-habits').textContent = habits.length;
+
+        // Count active days (days with ≥1 completion)
+        const c = getCompletions();
+        const activeDays = Object.values(c).filter(dayObj =>
+            Object.values(dayObj).some(v => v === true)
+        ).length;
+        if (el('stat-active-days')) el('stat-active-days').textContent = activeDays;
+
+        // Subtitle
+        const loginDate = getLoginDate();
+        const loginObj  = new Date(loginDate);
+        if (el('activity-subtitle')) {
+            el('activity-subtitle').textContent =
+                `Sejak ${loginObj.toLocaleString('id-ID', { month: 'long', year: 'numeric' })}`;
+        }
+
+        // Charts & cards
+        renderActivityChart(stats, period);
+        renderCategoryChart(stats.catCounts, habits);
+        renderHabitPerfCards(habits);
+        renderInsights(stats);
+    }
+
+    // ─────────────────────────────────────────────────
+    // 11. DOMContentLoaded — entry point (runs once)
+    // ─────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Sync from MySQL/Supabase first (await = non-blocking but sequential)
+        await syncHabitsFromSupabase();
+
+        // Render once with default period
+        renderStats(_currentPeriod);
+
+        // Re-render when theme changes (color update only, no sync)
+        document.addEventListener('themeChanged', () => {
+            // Small delay to let CSS variables update
+            setTimeout(() => renderStats(_currentPeriod), 80);
+        });
+    });
     </script>
 </body>
 </html>

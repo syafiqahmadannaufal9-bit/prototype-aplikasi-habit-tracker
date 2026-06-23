@@ -381,7 +381,7 @@ function renderHomeHabits() {
     const c = getCompletions();
 
     let html = `
-    <div class="bg-white rounded-2xl p-4 shadow-sm w-full max-w-md mx-auto">
+    <div class="bg-white rounded-2xl p-4 shadow-sm w-full max-w-md mx-auto overflow-y-auto max-h-[60vh] no-scrollbar">
         <div class="flex flex-col gap-4">
     `;
 
@@ -671,14 +671,14 @@ function renderCalendarHabits(dateStr) {
     }
 
     let html = `
-    <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+    <div class="overflow-x-auto overflow-y-auto max-h-[55vh] bg-white rounded-xl shadow-sm border border-gray-200 no-scrollbar relative">
         <table class="w-full text-left border-collapse">
-            <thead>
-                <tr class="bg-gray-50 border-b border-gray-200 text-[10px] text-gray-500 uppercase tracking-wider">
-                    <th class="px-4 py-3 font-bold">Habit</th>
-                    <th class="px-4 py-3 font-bold hidden sm:table-cell">Deskripsi</th>
-                    <th class="px-4 py-3 font-bold">Status</th>
-                    <th class="px-4 py-3 font-bold text-center">Aksi</th>
+            <thead class="sticky top-0 bg-gray-50 z-10 shadow-sm">
+                <tr class="border-b border-gray-200 text-[10px] text-gray-500 uppercase tracking-wider">
+                    <th class="px-4 py-3 font-bold bg-gray-50">Habit</th>
+                    <th class="px-4 py-3 font-bold hidden sm:table-cell bg-gray-50">Deskripsi</th>
+                    <th class="px-4 py-3 font-bold bg-gray-50">Status</th>
+                    <th class="px-4 py-3 font-bold text-center bg-gray-50">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">

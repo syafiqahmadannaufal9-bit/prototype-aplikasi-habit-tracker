@@ -64,23 +64,19 @@
         </div>
     </section>
 
-    <!-- Selected Date Summary -->
+    <!-- Habit List for Selected Date (MySQL-powered, single source of truth) -->
     <section class="px-6 mt-6 animate-slide-up delay-300">
-        <h3 class="text-lg font-bold text-gray-900 mb-4" id="selected-date-text">March 11, 2026</h3>
-        
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-900" id="selected-date-text">Select a date</h3>
+            <div id="sync-indicator" class="hidden flex items-center gap-1.5">
+                <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Live</span>
+            </div>
+        </div>
         <div id="calendar-habit-list" class="flex flex-col gap-3">
-            <!-- Dynamically populated by app.js -->
-        </div>
-    </section>
-
-    <!-- [MySQL Sync] Panel Data Sinkron dari Database -->
-    <section class="px-6 mt-4 animate-slide-up delay-350" id="mysql-sync-section" style="display:none;">
-        <div class="flex items-center gap-2 mb-3">
-            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-            <h4 class="text-xs font-bold uppercase tracking-wider text-gray-400">Database Sync (MySQL)</h4>
-        </div>
-        <div id="mysql-habit-list">
-            <!-- Diisi oleh fetchHabitsWithLogs() dari mysql-api.js -->
+            <div class="text-center py-6">
+                <p class="text-gray-400 text-sm">Pilih tanggal untuk melihat habit</p>
+            </div>
         </div>
     </section>
 
@@ -239,66 +235,95 @@
             if (calSelectedDay) {
                 const selDate = new Date(calYear, calMonth, calSelectedDay);
                 const selDateStr = getLocalDateString(selDate);
-                document.getElementById('selected-date-text').textContent = selDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-                renderCalendarHabits(selDateStr);
+                document.getElementById('selected-date-text').textContent = selDate.toLocaleDateString('id-ID', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+                // Jika dipanggil dari toggle (bukan navigasi user), skip syncMysqlForDate
+                // agar tidak terjadi infinite loop
+                if (!window._calendarSyncing) {
+                    const calHabitList = document.getElementById('calendar-habit-list');
+                    if (calHabitList) {
+                        calHabitList.innerHTML = `
+                            <div class="flex items-center justify-center gap-2 py-6 text-gray-400">
+                                <i class="fa-solid fa-spinner fa-spin"></i>
+                                <span class="text-sm">Memuat data...</span>
+                            </div>`;
+                    }
+                    syncMysqlForDate(selDateStr);
+                }
             } else {
                 document.getElementById('selected-date-text').textContent = `${monthNames[calMonth]} ${calYear}`;
                 const calHabitList = document.getElementById('calendar-habit-list');
                 if(calHabitList) {
                     calHabitList.innerHTML = `
                         <div class="text-center py-6">
-                            <p class="text-gray-400 text-sm">Select a date to view habits</p>
+                            <p class="text-gray-400 text-sm">Pilih tanggal untuk melihat habit</p>
                         </div>`;
                 }
+                document.getElementById('sync-indicator').classList.add('hidden');
             }
         }
 
         function selectCalDate(day) {
             calSelectedDay = day;
             renderCalendarFull();
-
-            // ─── Sinkronisasi MySQL: Ambil data habit + log untuk tanggal ini ───
-            const selDate = new Date(calYear, calMonth, day);
-            const selDateStr = getLocalDateString(selDate);
-            syncMysqlForDate(selDateStr);
+            // MySQL sync sudah dipanggil di dalam renderCalendarFull
         }
 
         // ─── Fungsi Sinkronisasi MySQL ──────────────────────────────
         // Dipanggil setiap kali user memilih tanggal di kalender.
-        // Mengambil data habits + status log dari MySQL via LEFT JOIN.
+        // Mengisi #calendar-habit-list (satu-satunya list) dari MySQL.
         async function syncMysqlForDate(dateStr) {
-            const mysqlSection = document.getElementById('mysql-sync-section');
-            const mysqlList = document.getElementById('mysql-habit-list');
-            if (!mysqlSection || !mysqlList) return;
+            const habitList = document.getElementById('calendar-habit-list');
+            const syncIndicator = document.getElementById('sync-indicator');
+            if (!habitList) return;
 
-            // Tampilkan section dengan loading state
-            mysqlSection.style.display = 'block';
-            mysqlList.innerHTML = `
-                <div class="flex items-center justify-center gap-2 py-6 text-gray-400">
-                    <i class="fa-solid fa-spinner fa-spin"></i>
-                    <span class="text-sm">Memuat data dari database...</span>
-                </div>`;
+            syncIndicator && syncIndicator.classList.remove('hidden');
 
             try {
                 // Panggil API fetchHabitsWithLogs dari mysql-api.js
                 const result = await fetchHabitsWithLogs(dateStr);
 
                 if (result.success && result.habits.length > 0) {
-                    // Render tabel sinkronisasi
-                    renderSyncedHabits('mysql-habit-list', result.habits, dateStr, 'calendar');
+                    // Render ke list utama (bukan panel terpisah)
+                    renderSyncedHabits('calendar-habit-list', result.habits, dateStr, 'calendar');
+
+                    // Update completions di localStorage agar red-dot akurat
+                    const completions = getCompletions();
+                    if (!completions[dateStr]) completions[dateStr] = {};
+                    result.habits.forEach(h => {
+                        completions[dateStr][h.habit_id] = (h.checklist_status === 1);
+                    });
+                    localStorage.setItem('completions', JSON.stringify(completions));
+                    // Re-render kalender untuk update red-dot.
+                    // WAJIB set _calendarSyncing = true agar renderCalendarFull
+                    // TIDAK memanggil syncMysqlForDate ulang → mencegah infinite loop.
+                    window._calendarSyncing = true;
+                    renderCalendarFull();
+                    window._calendarSyncing = false;
+
                 } else if (result.success && result.habits.length === 0) {
-                    mysqlList.innerHTML = `
-                        <div class="text-center py-6 text-gray-400">
-                            <p class="text-sm">Belum ada habit di MySQL untuk tanggal ini.</p>
-                            <p class="text-xs mt-1">Tambahkan habit melalui halaman Home.</p>
+                    habitList.innerHTML = `
+                        <div class="text-center py-8 text-gray-400">
+                            <i class="fa-solid fa-calendar-xmark text-2xl mb-2"></i>
+                            <p class="text-sm font-medium">Belum ada habit untuk tanggal ini.</p>
+                            <p class="text-xs mt-1">Tambahkan habit melalui tombol + di bawah.</p>
                         </div>`;
                 } else {
-                    // Jika tidak login MySQL atau server tidak aktif, sembunyikan section
-                    mysqlSection.style.display = 'none';
+                    // User belum login MySQL atau server tidak aktif
+                    habitList.innerHTML = `
+                        <div class="text-center py-8 text-gray-400">
+                            <i class="fa-solid fa-server text-2xl mb-2"></i>
+                            <p class="text-sm">${result.message || 'Gagal memuat data. Pastikan sudah login.'}</p>
+                        </div>`;
                 }
             } catch (err) {
-                console.warn('MySQL sync unavailable (server mungkin tidak aktif):', err);
-                mysqlSection.style.display = 'none';
+                console.warn('MySQL sync error:', err);
+                habitList.innerHTML = `
+                    <div class="text-center py-8 text-red-400">
+                        <i class="fa-solid fa-triangle-exclamation text-2xl mb-2"></i>
+                        <p class="text-sm">Tidak dapat terhubung ke server.</p>
+                    </div>`;
+            } finally {
+                syncIndicator && syncIndicator.classList.add('hidden');
             }
         }
     </script>

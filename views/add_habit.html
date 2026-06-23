@@ -1,473 +1,1290 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Habit - Habit Tracker</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../css/tailwind.css">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        green: { 500: '#10B981', 600: '#059669' },
-                        blue: { 500: '#5BA4C9', 600: '#0284C7' }
-                    }
-                }
+    <title>Add New Habit — HabitFlow</title>
+    <meta name="description"
+        content="Create a new habit to track with HabitFlow. Choose a category, set your goals, and pick your evaluation method.">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* ── Design Tokens ───────────────────────────────────────────── */
+        :root {
+            --mint: #34d399;
+            --mint-dark: #059669;
+            --mint-light: #d1fae5;
+            --teal: #2dd4bf;
+            --teal-light: #ccfbf1;
+            --lavender: #a78bfa;
+            --lavender-light: #ede9fe;
+            --coral: #fb923c;
+            --coral-light: #ffedd5;
+            --blue-pastel: #93c5fd;
+            --blue-light: #dbeafe;
+
+            --bg: #f0fdf8;
+            --surface: #ffffff;
+            --surface-2: #f8fffe;
+            --border: rgba(52, 211, 153, 0.18);
+            --text-primary: #0f2a1e;
+            --text-secondary: #4b7263;
+            --text-muted: #8fa89e;
+
+            --shadow-sm: 0 2px 8px rgba(16, 185, 129, 0.08);
+            --shadow-md: 0 8px 32px rgba(16, 185, 129, 0.13);
+            --shadow-lg: 0 16px 48px rgba(16, 185, 129, 0.18);
+            --radius-card: 20px;
+            --radius-btn: 14px;
+            --radius-pill: 999px;
+        }
+
+        /* ── Reset & Base ────────────────────────────────────────────── */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Glassmorphism Background ────────────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 600px 400px at 10% -10%, rgba(52, 211, 153, 0.22) 0%, transparent 70%),
+                radial-gradient(ellipse 500px 500px at 90% 20%, rgba(45, 212, 191, 0.18) 0%, transparent 70%),
+                radial-gradient(ellipse 400px 600px at 50% 80%, rgba(167, 139, 250, 0.12) 0%, transparent 70%),
+                radial-gradient(ellipse 300px 300px at 80% 90%, rgba(251, 146, 60, 0.10) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Floating Blobs ──────────────────────────────────────────── */
+        .blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.25;
+            pointer-events: none;
+            z-index: 0;
+            animation: float 10s ease-in-out infinite alternate;
+        }
+
+        .blob-1 {
+            width: 280px;
+            height: 280px;
+            background: var(--mint);
+            top: -60px;
+            left: -80px;
+            animation-delay: 0s;
+        }
+
+        .blob-2 {
+            width: 200px;
+            height: 200px;
+            background: var(--teal);
+            top: 30%;
+            right: -60px;
+            animation-delay: 3s;
+        }
+
+        .blob-3 {
+            width: 240px;
+            height: 240px;
+            background: var(--lavender);
+            bottom: 10%;
+            left: 20%;
+            animation-delay: 6s;
+        }
+
+        @keyframes float {
+            from {
+                transform: translateY(0px) scale(1);
+            }
+
+            to {
+                transform: translateY(-30px) scale(1.05);
             }
         }
-    </script>
-    <style>
-        .category-btn.active span {
-            color: white;
+
+        /* ── Layout Wrapper ──────────────────────────────────────────── */
+        .page-wrapper {
+            position: relative;
+            z-index: 1;
+            max-width: 480px;
+            margin: 0 auto;
+            padding-bottom: 120px;
         }
-        .category-btn.active div {
-            background-color: transparent;
-            color: white;
+
+        /* ── Header ──────────────────────────────────────────────────── */
+        .top-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 20px 14px;
+            background: rgba(240, 253, 248, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
         }
-        .evaluation-option input:checked ~ div > .radio-inner {
+
+        .btn-back {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1.5px solid var(--border);
+            background: rgba(255, 255, 255, 0.7);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-back:hover {
+            background: var(--surface);
+            transform: scale(1.08);
+        }
+
+        .page-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .header-spacer {
+            width: 40px;
+        }
+
+        /* ── Content Sections ────────────────────────────────────────── */
+        .content {
+            padding: 24px 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+        }
+
+        .section-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+        }
+
+        /* ── Category Grid ───────────────────────────────────────────── */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .category-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 7px;
+            padding: 12px 6px 10px;
+            background: rgba(255, 255, 255, 0.75);
+            border: 1.5px solid rgba(255, 255, 255, 0.5);
+            border-radius: 18px;
+            cursor: pointer;
+            transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: var(--shadow-sm);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .category-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .category-card.selected {
+            border-color: var(--mint);
+            background: linear-gradient(135deg, #34d399, #2dd4bf);
+            box-shadow: 0 8px 24px rgba(52, 211, 153, 0.35);
+            transform: translateY(-3px) scale(1.04);
+        }
+
+        .category-card.selected .cat-icon-wrap {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .category-card.selected .cat-label {
+            color: #fff;
+        }
+
+        .cat-icon-wrap {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            transition: background 0.22s;
+        }
+
+        .cat-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.2;
+            transition: color 0.22s;
+        }
+
+        /* Category icon colors */
+        .cat-art {
+            background: #fce7f3;
+            color: #db2777;
+        }
+
+        .cat-study {
+            background: var(--blue-light);
+            color: #2563eb;
+        }
+
+        .cat-entertain {
+            background: var(--lavender-light);
+            color: #7c3aed;
+        }
+
+        .cat-meditate {
+            background: #ede9fe;
+            color: #6d28d9;
+        }
+
+        .cat-work {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .cat-sport {
+            background: var(--coral-light);
+            color: #ea580c;
+        }
+
+        .cat-finance {
+            background: var(--mint-light);
+            color: #065f46;
+        }
+
+        .cat-custom {
+            background: linear-gradient(135deg, #34d399, #2dd4bf);
+            color: #fff;
+        }
+
+        .cat-default {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+        /* ── Custom Category Panel ───────────────────────────────────── */
+        .custom-panel {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-card);
+            padding: 18px;
+            display: none;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 12px;
+            backdrop-filter: blur(12px);
+            animation: slideDown 0.28s ease;
+        }
+
+        .custom-panel.visible {
+            display: flex;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── Form Inputs ─────────────────────────────────────────────── */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .form-input,
+        .form-textarea {
+            width: 100%;
+            padding: 13px 16px;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1.5px solid rgba(255, 255, 255, 0.6);
+            border-radius: var(--radius-btn);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            outline: none;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), inset 0 1px 3px rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+        }
+
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-input:focus,
+        .form-textarea:focus {
+            border-color: var(--mint);
+            box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.18), 0 2px 8px rgba(52, 211, 153, 0.12);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .form-textarea {
+            resize: none;
+            height: 96px;
+        }
+
+        /* ── Evaluation Cards ────────────────────────────────────────── */
+        .eval-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .eval-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.75);
+            border: 1.5px solid rgba(255, 255, 255, 0.5);
+            border-radius: var(--radius-card);
+            cursor: pointer;
+            transition: all 0.22s ease;
+            box-shadow: var(--shadow-sm);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .eval-card:hover {
+            transform: translateX(4px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .eval-card.selected {
+            border-color: var(--mint);
+            background: linear-gradient(135deg, rgba(52, 211, 153, 0.08), rgba(45, 212, 191, 0.08));
+            box-shadow: 0 4px 18px rgba(52, 211, 153, 0.18);
+        }
+
+        .eval-icon-wrap {
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .eval-icon-checklist {
+            background: var(--blue-light);
+            color: #2563eb;
+        }
+
+        .eval-icon-numeric {
+            background: var(--lavender-light);
+            color: #7c3aed;
+        }
+
+        .eval-icon-timer {
+            background: var(--coral-light);
+            color: #ea580c;
+        }
+
+        .eval-text {
+            flex: 1;
+        }
+
+        .eval-title {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .eval-desc {
+            font-size: 0.73rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .eval-radio {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #d1d5db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: border-color 0.2s;
+        }
+
+        .eval-card.selected .eval-radio {
+            border-color: var(--mint);
+        }
+
+        .eval-radio-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--mint), var(--teal));
+            opacity: 0;
+            transform: scale(0.6);
+            transition: all 0.18s ease;
+        }
+
+        .eval-card.selected .eval-radio-dot {
             opacity: 1;
+            transform: scale(1);
+        }
+
+        /* ── Numeric Preview ─────────────────────────────────────────── */
+        .numeric-preview {
+            display: none;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-card);
+            padding: 16px;
+            margin-top: 4px;
+            backdrop-filter: blur(8px);
+            animation: slideDown 0.25s ease;
+        }
+
+        .numeric-preview.visible {
+            display: block;
+        }
+
+        .preview-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .counter-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .counter-text {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .counter-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .counter-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid var(--mint);
+            background: transparent;
+            color: var(--mint-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.18s ease;
+        }
+
+        .counter-btn:hover {
+            background: var(--mint);
+            color: #fff;
+            transform: scale(1.1);
+        }
+
+        .counter-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid var(--mint);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: var(--mint-dark);
+            transition: all 0.22s ease;
+        }
+
+        .counter-circle.active {
+            background: linear-gradient(135deg, var(--mint), var(--teal));
+            color: #fff;
+            border-color: transparent;
+        }
+
+        /* ── Loading skeleton for categories ─────────────────────────── */
+        .skeleton {
+            background: linear-gradient(90deg, #e2f5ee 25%, #f0fdf8 50%, #e2f5ee 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.4s infinite;
+            border-radius: 18px;
+            height: 80px;
+        }
+
+        @keyframes shimmer {
+            from {
+                background-position: 200% 0;
+            }
+
+            to {
+                background-position: -200% 0;
+            }
+        }
+
+        /* ── Submit Button ───────────────────────────────────────────── */
+        .submit-area {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 16px 20px 28px;
+            background: linear-gradient(to top, rgba(240, 253, 248, 0.98) 60%, transparent);
+            z-index: 50;
+        }
+
+        .submit-inner {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 17px;
+            border: none;
+            border-radius: var(--radius-pill);
+            background: linear-gradient(135deg, #34d399 0%, #2dd4bf 50%, #059669 100%);
+            background-size: 200% 100%;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.28s ease;
+            box-shadow: 0 6px 24px rgba(52, 211, 153, 0.45), 0 2px 6px rgba(5, 150, 105, 0.3);
+            text-transform: uppercase;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 32px rgba(52, 211, 153, 0.55), 0 4px 12px rgba(5, 150, 105, 0.4);
+            background-position: right center;
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ── Toast Notification ──────────────────────────────────────── */
+        .toast {
+            position: fixed;
+            bottom: 110px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: linear-gradient(135deg, #0f2a1e, #1a4a32);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: var(--radius-pill);
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 200;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ── Error state ─────────────────────────────────────────────── */
+        .error-msg {
+            font-size: 0.72rem;
+            color: #dc2626;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .form-input.error,
+        .form-textarea.error {
+            border-color: #fca5a5;
+        }
+
+        /* ── Card surface wrapper ────────────────────────────────────── */
+        .card-surface {
+            background: rgba(255, 255, 255, 0.65);
+            border: 1.5px solid rgba(255, 255, 255, 0.55);
+            border-radius: var(--radius-card);
+            padding: 20px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: var(--shadow-sm);
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
 
-    <!-- Header -->
-    <header class="px-6 pt-8 pb-4 flex justify-between items-center bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50 animate-slide-up">
-        <a href="index.html" class="w-10 h-10 rounded-full flex items-center justify-center text-gray-700 hover:bg-gray-100/50 transition focus:outline-none">
-            <i class="fa-solid fa-arrow-left"></i>
-        </a>
-        <h1 class="text-xl font-bold text-gray-900">Add New Habit</h1>
-        <div class="w-10 h-10"></div> <!-- Placeholder for alignment -->
-    </header>
+<body>
 
-    <div class="px-6 py-6 animate-slide-up flex flex-col gap-8">
-        
-        <!-- Category Options -->
-        <section>
-            <h2 class="text-lg font-bold text-gray-900 mb-4">Select Category</h2>
-            <div class="grid grid-cols-3 gap-3" id="category-container">
-                <!-- Art -->
-                <button type="button" class="category-btn bg-white border border-gray-200 rounded-2xl py-3 px-2 flex flex-col items-center justify-center gap-2 shadow-sm transition hover:bg-gray-50 focus:outline-none" data-cat="art">
-                    <div class="w-10 h-10 rounded-full bg-pink-50 text-pink-500 flex items-center justify-center text-lg transition-colors"><i class="fa-solid fa-palette"></i></div>
-                    <span class="text-xs font-bold text-gray-700 transition-colors">Art</span>
-                </button>
-                <!-- Study -->
-                <button type="button" class="category-btn bg-white border border-gray-200 rounded-2xl py-3 px-2 flex flex-col items-center justify-center gap-2 shadow-sm transition hover:bg-gray-50 focus:outline-none" data-cat="study">
-                    <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-lg transition-colors"><i class="fa-solid fa-book"></i></div>
-                    <span class="text-xs font-bold text-gray-700 transition-colors">Study</span>
-                </button>
-                <!-- Entertainment -->
-                <button type="button" class="category-btn bg-white border border-gray-200 rounded-2xl py-3 px-2 flex flex-col items-center justify-center gap-2 shadow-sm transition hover:bg-gray-50 focus:outline-none" data-cat="entertainment">
-                    <div class="w-10 h-10 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-lg transition-colors"><i class="fa-solid fa-gamepad"></i></div>
-                    <span class="text-xs font-bold text-gray-700 transition-colors">Entertain</span>
-                </button>
-                <!-- Meditation -->
-                <button type="button" class="category-btn bg-white border border-gray-200 rounded-2xl py-3 px-2 flex flex-col items-center justify-center gap-2 shadow-sm transition hover:bg-gray-50 focus:outline-none" data-cat="meditation">
-                    <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center text-lg transition-colors"><i class="fa-solid fa-spa"></i></div>
-                    <span class="text-xs font-bold text-gray-700 transition-colors">Meditate</span>
-                </button>
-                <!-- Finance -->
-                <button type="button" class="category-btn bg-white border border-gray-200 rounded-2xl py-3 px-2 flex flex-col items-center justify-center gap-2 shadow-sm transition hover:bg-gray-50 focus:outline-none" data-cat="finance">
-                    <div class="w-10 h-10 rounded-full bg-green-50 text-green-500 flex items-center justify-center text-lg transition-colors"><i class="fa-solid fa-wallet"></i></div>
-                    <span class="text-xs font-bold text-gray-700 transition-colors">Finance</span>
-                </button>
-                <!-- Sport -->
-                <button type="button" class="category-btn bg-white border border-gray-200 rounded-2xl py-3 px-2 flex flex-col items-center justify-center gap-2 shadow-sm transition hover:bg-gray-50 focus:outline-none" data-cat="sport">
-                    <div class="w-10 h-10 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center text-lg transition-colors"><i class="fa-solid fa-basketball"></i></div>
-                    <span class="text-xs font-bold text-gray-700 transition-colors">Sport</span>
-                </button>
-                <!-- Health -->
-                <button type="button" class="category-btn bg-white border border-gray-200 rounded-2xl py-3 px-2 flex flex-col items-center justify-center gap-2 shadow-sm transition hover:bg-gray-50 focus:outline-none" data-cat="health">
-                    <div class="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-lg transition-colors"><i class="fa-solid fa-heart-pulse"></i></div>
-                    <span class="text-xs font-bold text-gray-700 transition-colors">Health</span>
-                </button>
-                <!-- Work -->
-                <button type="button" class="category-btn bg-white border border-gray-200 rounded-2xl py-3 px-2 flex flex-col items-center justify-center gap-2 shadow-sm transition hover:bg-gray-50 focus:outline-none" data-cat="work">
-                    <div class="w-10 h-10 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center text-lg transition-colors"><i class="fa-solid fa-briefcase"></i></div>
-                    <span class="text-xs font-bold text-gray-700 transition-colors">Work</span>
-                </button>
-                <!-- Custom -->
-                <button type="button" class="category-btn bg-white border border-dashed border-gray-300 rounded-2xl py-3 px-2 flex flex-col items-center justify-center gap-2 shadow-sm transition hover:bg-gray-50 focus:outline-none" data-cat="custom">
-                    <div class="w-10 h-10 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center text-lg transition-colors"><i class="fa-solid fa-plus"></i></div>
-                    <span class="text-xs font-bold text-gray-500 transition-colors">Custom</span>
-                </button>
-            </div>
-            
-            <!-- Custom Category Inputs (Hidden by default) -->
-            <div id="custom-category-details" class="mt-4 p-5 bg-white rounded-2xl shadow-sm border border-gray-100 hidden flex-col gap-4 animate-slide-up">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-600 mb-1 ml-1" for="custom-cat-name">Custom Category Name</label>
-                    <input type="text" id="custom-cat-name" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:border-transparent theme-focus-ring transition" placeholder="e.g., Pet Care">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-600 mb-2 ml-1">Select Custom Icon</label>
-                    <div class="flex flex-wrap gap-3 pb-2" id="custom-icon-selector">
-                        <button type="button" class="icon-btn active w-10 h-10 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 focus:outline-none transition-colors" data-icon="fa-paw"><i class="fa-solid fa-paw"></i></button>
-                        <button type="button" class="icon-btn w-10 h-10 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 focus:outline-none transition-colors" data-icon="fa-music"><i class="fa-solid fa-music"></i></button>
-                        <button type="button" class="icon-btn w-10 h-10 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 focus:outline-none transition-colors" data-icon="fa-plane"><i class="fa-solid fa-plane"></i></button>
-                        <button type="button" class="icon-btn w-10 h-10 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 focus:outline-none transition-colors" data-icon="fa-camera"><i class="fa-solid fa-camera"></i></button>
-                        <button type="button" class="icon-btn w-10 h-10 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 focus:outline-none transition-colors" data-icon="fa-utensils"><i class="fa-solid fa-utensils"></i></button>
-                        <button type="button" class="icon-btn w-10 h-10 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 focus:outline-none transition-colors" data-icon="fa-bicycle"><i class="fa-solid fa-bicycle"></i></button>
-                        <button type="button" class="icon-btn w-10 h-10 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 focus:outline-none transition-colors" data-icon="fa-seedling"><i class="fa-solid fa-seedling"></i></button>
-                        <button type="button" class="icon-btn w-10 h-10 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 focus:outline-none transition-colors" data-icon="fa-star"><i class="fa-solid fa-star"></i></button>
-                    </div>
-                </div>
-            </div>
-        </section>
+    <!-- Decorative blobs -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
 
-        <!-- Evaluation Method -->
-        <section>
-            <h2 class="text-lg font-bold text-gray-900 mb-4">How do you want to evaluate your progress?</h2>
-            <div class="flex flex-col gap-3">
-                <label class="relative flex items-center p-4 bg-white rounded-2xl shadow-sm border border-gray-100 cursor-pointer evaluation-option transition-all border-container">
-                    <input type="radio" name="evaluation" value="checklist" class="peer sr-only" checked>
-                    <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-lg mr-4 shrink-0 transition-all">
-                        <i class="fa-solid fa-list-check"></i>
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="font-bold text-sm text-gray-900">With Checklist</h3>
-                        <p class="text-xs text-gray-500 mt-0.5">Simple completed or not completed</p>
-                    </div>
-                    <div class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center ml-2 border-target shrink-0 transition-all">
-                        <div class="radio-inner w-2.5 h-2.5 rounded-full bg-[var(--primary)] opacity-0 transition-opacity theme-bg-update"></div>
-                    </div>
-                </label>
+    <div class="page-wrapper">
 
-                <label class="relative flex items-center p-4 bg-white rounded-2xl shadow-sm border border-gray-100 cursor-pointer evaluation-option transition-all border-container">
-                    <input type="radio" name="evaluation" value="numeric" class="peer sr-only">
-                    <div class="w-10 h-10 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-lg mr-4 shrink-0 transition-all">
-                        <i class="fa-solid fa-hashtag"></i>
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="font-bold text-sm text-gray-900">With Numeric Value</h3>
-                        <p class="text-xs text-gray-500 mt-0.5">Track amounts like pages read</p>
-                    </div>
-                    <div class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center ml-2 border-target shrink-0 transition-all">
-                        <div class="radio-inner w-2.5 h-2.5 rounded-full bg-[var(--primary)] opacity-0 transition-opacity theme-bg-update"></div>
-                    </div>
-                </label>
+        <!-- ── Header ── -->
+        <header class="top-header">
+            <a href="index.html" class="btn-back" id="btn-back" aria-label="Back">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h1 class="page-title">Add New Habit</h1>
+            <div class="header-spacer"></div>
+        </header>
 
-                <label class="relative flex items-center p-4 bg-white rounded-2xl shadow-sm border border-gray-100 cursor-pointer evaluation-option transition-all border-container">
-                    <input type="radio" name="evaluation" value="timer" class="peer sr-only">
-                    <div class="w-10 h-10 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center text-lg mr-4 shrink-0 transition-all">
-                        <i class="fa-solid fa-stopwatch"></i>
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="font-bold text-sm text-gray-900">With Timer</h3>
-                        <p class="text-xs text-gray-500 mt-0.5">Track total time spent on your habit</p>
-                    </div>
-                    <div class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center ml-2 border-target shrink-0 transition-all">
-                        <div class="radio-inner w-2.5 h-2.5 rounded-full bg-[var(--primary)] opacity-0 transition-opacity theme-bg-update"></div>
-                    </div>
-                </label>
-            </div>
+        <!-- ── Content ── -->
+        <div class="content">
 
-            <!-- Evaluation Preview Widget -->
-            <div id="eval-preview" class="mt-4 hidden">
-                <!-- Numeric Preview -->
-                <div id="numeric-preview" class="hidden p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
-                    <p class="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">Counter Preview</p>
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm font-semibold text-gray-700">Your progress</span>
-                        <div class="flex items-center gap-3">
-                            <!-- Minus button -->
-                            <button type="button" id="preview-minus"
-                                class="w-9 h-9 rounded-full border-2 flex items-center justify-center text-sm transition-colors"
-                                style="border-color: var(--primary); color: var(--primary);"
-                                onmouseenter="this.style.backgroundColor='var(--primary)';this.style.color='white';"
-                                onmouseleave="this.style.backgroundColor='';this.style.color='var(--primary)';">
-                                <i class="fa-solid fa-minus text-xs"></i>
-                            </button>
-                            <!-- Number circle -->
-                            <div id="preview-circle"
-                                class="w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all"
-                                style="border-color: var(--primary);">
-                                <input type="number" id="preview-value"
-                                    class="w-full h-full bg-transparent text-center font-bold text-base focus:outline-none"
-                                    style="-moz-appearance: textfield; appearance: textfield; color: var(--primary);"
-                                    value="0" min="0">
-                            </div>
-                            <!-- Plus button -->
-                            <button type="button" id="preview-plus"
-                                class="w-9 h-9 rounded-full border-2 flex items-center justify-center text-sm transition-colors"
-                                style="border-color: var(--primary); color: var(--primary);"
-                                onmouseenter="this.style.backgroundColor='var(--primary)';this.style.color='white';"
-                                onmouseleave="this.style.backgroundColor='';this.style.color='var(--primary)';">
-                                <i class="fa-solid fa-plus text-xs"></i>
-                            </button>
+            <!-- ── 1. Select Category ── -->
+            <section id="section-category">
+                <p class="section-label">Select Category</p>
+                <div class="card-surface">
+                    <!-- Category grid (populated by JS from API) -->
+                    <div class="category-grid" id="category-grid">
+                        <!-- Skeleton loaders -->
+                        <div class="skeleton"></div>
+                        <div class="skeleton"></div>
+                        <div class="skeleton"></div>
+                        <div class="skeleton"></div>
+                        <div class="skeleton"></div>
+                        <div class="skeleton"></div>
+                        <div class="skeleton"></div>
+                        <div class="skeleton"></div>
+                    </div>
+
+                    <!-- Custom Category Panel -->
+                    <div class="custom-panel" id="custom-panel">
+                        <div class="form-group">
+                            <label class="form-label" for="custom-cat-name">Category Name</label>
+                            <input type="text" id="custom-cat-name" class="form-input"
+                                placeholder="e.g., Pet Care, Cooking…" maxlength="50">
                         </div>
-                    </div>
-                    <!-- Unit input -->
-                    <div class="mt-3">
-                        <label class="block text-xs font-semibold text-gray-600 mb-1 ml-1" for="habitUnit">Unit Label <span class="font-normal text-gray-400">(optional)</span></label>
-                        <input type="text" id="habitUnit"
-                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:border-transparent theme-focus-ring transition"
-                            placeholder="e.g., glasses, pages, reps">
-                    </div>
-                </div>
-            </div>
-        </section>
-        
-        <form id="add-habit-form" class="flex flex-col gap-8 mb-6">
-            <!-- Define Your Habit -->
-            <section>
-                <h2 class="text-lg font-bold text-gray-900 mb-4">Define Your Habit</h2>
-                <div class="flex flex-col gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1 ml-1" for="habitName">Habit Name</label>
-                        <input type="text" id="habitName" required class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:border-transparent theme-focus-ring transition shadow-sm" placeholder="e.g., Drink Water">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1 ml-1" for="habitGoals">Goals</label>
-                        <input type="text" id="habitGoals" required class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:border-transparent theme-focus-ring transition shadow-sm" placeholder="e.g., 8 glasses daily">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1 ml-1" for="habitDescription">Description</label>
-                        <textarea id="habitDescription" required class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:border-transparent theme-focus-ring transition shadow-sm h-28 resize-none" placeholder="Add some details about your habit..."></textarea>
+                        <div class="form-group">
+                            <label class="form-label">Choose Icon</label>
+                            <div style="display:flex;flex-wrap:wrap;gap:8px;" id="custom-icon-grid">
+                                <!-- Custom icons -->
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Submit Button -->
-            <div class="pt-2">
-                <button type="submit" class="w-full py-4 text-white font-bold text-lg rounded-2xl shadow-lg transform transition hover:-translate-y-1 active:translate-y-0 theme-bg-update" style="background-color: var(--primary);">
-                    Create Habit
-                </button>
-            </div>
-        </form>
+            <!-- ── 2. Define Your Habit ── -->
+            <section id="section-habit">
+                <p class="section-label">Define Your Habit</p>
+                <div class="card-surface" style="display:flex;flex-direction:column;gap:14px;">
+                    <div class="form-group">
+                        <label class="form-label" for="habit-name">Habit Name *</label>
+                        <input type="text" id="habit-name" class="form-input"
+                            placeholder="e.g., Drink Water, Morning Run…" maxlength="100" required>
+                        <span class="error-msg" id="err-habit-name">Please enter a habit name.</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="habit-goals">Goals</label>
+                        <input type="text" id="habit-goals" class="form-input"
+                            placeholder="e.g., 8 glasses daily, 30 minutes…" maxlength="255">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="habit-desc">Description</label>
+                        <textarea id="habit-desc" class="form-textarea"
+                            placeholder="Add some details about your habit…"></textarea>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ── 3. Evaluation Method ── -->
+            <section id="section-eval">
+                <p class="section-label">Evaluation Method</p>
+                <div class="eval-grid">
+
+                    <div class="eval-card selected" data-eval="checklist" id="eval-checklist" role="button" tabindex="0"
+                        aria-pressed="true">
+                        <div class="eval-icon-wrap eval-icon-checklist">
+                            <i class="bi bi-clipboard2-check"></i>
+                        </div>
+                        <div class="eval-text">
+                            <div class="eval-title">Checklist</div>
+                            <div class="eval-desc">Simple done / not done tracking</div>
+                        </div>
+                        <div class="eval-radio">
+                            <div class="eval-radio-dot"></div>
+                        </div>
+                    </div>
+
+                    <div class="eval-card" data-eval="numeric" id="eval-numeric" role="button" tabindex="0"
+                        aria-pressed="false">
+                        <div class="eval-icon-wrap eval-icon-numeric">
+                            <i class="bi bi-123"></i>
+                        </div>
+                        <div class="eval-text">
+                            <div class="eval-title">Numeric Value</div>
+                            <div class="eval-desc">Track amounts like pages, glasses, reps</div>
+                        </div>
+                        <div class="eval-radio">
+                            <div class="eval-radio-dot"></div>
+                        </div>
+                    </div>
+
+                    <!-- Numeric preview -->
+                    <div class="numeric-preview" id="numeric-preview">
+                        <p class="preview-label">Counter Preview</p>
+                        <div class="counter-row">
+                            <span class="counter-text">Your progress</span>
+                            <div class="counter-controls">
+                                <button class="counter-btn" id="counter-minus" type="button" aria-label="Decrease"><i
+                                        class="bi bi-dash"></i></button>
+                                <div class="counter-circle" id="counter-circle">0</div>
+                                <button class="counter-btn" id="counter-plus" type="button" aria-label="Increase"><i
+                                        class="bi bi-plus"></i></button>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-top:12px;">
+                            <label class="form-label" for="habit-unit">Unit Label <span
+                                    style="font-weight:400;text-transform:none;">(optional)</span></label>
+                            <input type="text" id="habit-unit" class="form-input"
+                                placeholder="e.g., glasses, pages, reps" maxlength="30">
+                        </div>
+                    </div>
+
+                    <div class="eval-card" data-eval="timer" id="eval-timer" role="button" tabindex="0"
+                        aria-pressed="false">
+                        <div class="eval-icon-wrap eval-icon-timer">
+                            <i class="bi bi-stopwatch"></i>
+                        </div>
+                        <div class="eval-text">
+                            <div class="eval-title">Timer</div>
+                            <div class="eval-desc">Track total time spent on your habit</div>
+                        </div>
+                        <div class="eval-radio">
+                            <div class="eval-radio-dot"></div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </div><!-- /content -->
+    </div><!-- /page-wrapper -->
+
+    <!-- ── Fixed Submit Button ── -->
+    <div class="submit-area">
+        <div class="submit-inner">
+            <button class="btn-submit" id="btn-submit" type="button">
+                <i class="bi bi-plus-circle-fill" style="font-size:1.1rem;"></i>
+                Create Habit
+            </button>
+        </div>
     </div>
 
-    <script src="../js/habits.js"></script>
-    <script src="../js/app.js"></script>
+    <!-- Toast -->
+    <div class="toast" id="toast-msg" role="alert" aria-live="polite"></div>
+
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Wait slightly for app.js theme to load
-            setTimeout(() => {
-                 updateLocalColors(document.documentElement.getAttribute('data-theme') || 'green');
-            }, 50);
-            
-            document.addEventListener('themeChanged', (e) => {
-                updateLocalColors(e.detail.theme);
-            });
+        // ================================================================
+        // HabitFlow — Add Habit Page Script
+        // Connects to: GET /api/categories, POST /api/categories, POST /api/habits
+        // ================================================================
 
-            // Category Selection
-            const catBtns = document.querySelectorAll('.category-btn');
-            const customDetails = document.getElementById('custom-category-details');
-            
-            catBtns.forEach(btn => {
+        const API_BASE = 'http://localhost:3000';
+
+        // ── Auth: Ambil userId dari localStorage key yang dipakai app.js ──
+        // app.js menyimpan: localStorage.setItem('currentUser', JSON.stringify(result.user))
+        // result.user = { id, username, email }
+
+        // Custom icon pool for custom categories
+        const CUSTOM_ICONS = [
+            'bi-paw', 'bi-music-note', 'bi-airplane', 'bi-camera',
+            'bi-egg-fried', 'bi-bicycle', 'bi-tree', 'bi-star',
+            'bi-heart', 'bi-lightning', 'bi-cup-hot', 'bi-flower1',
+            'bi-house', 'bi-journal', 'bi-moon', 'bi-sun'
+        ];
+
+        // Icon → color map for standard categories
+        const CAT_COLOR_MAP = {
+            'bi-palette': { bg: '#fce7f3', color: '#db2777' },
+            'bi-book': { bg: '#dbeafe', color: '#2563eb' },
+            'bi-controller': { bg: '#ede9fe', color: '#7c3aed' },
+            'bi-moon-stars': { bg: '#ede9fe', color: '#6d28d9' },
+            'bi-briefcase': { bg: '#f3f4f6', color: '#374151' },
+            'bi-dribbble': { bg: '#ffedd5', color: '#ea580c' },
+            'bi-wallet2': { bg: '#d1fae5', color: '#065f46' },
+        };
+
+        // ── State ──────────────────────────────────────────────────────
+        let selectedCategoryId = null;
+        let selectedEval = 'checklist';
+        let selectedCustomIcon = CUSTOM_ICONS[0];
+        let counterValue = 0;
+        let categories = [];
+
+        // ── DOM refs ───────────────────────────────────────────────────
+        const categoryGrid = document.getElementById('category-grid');
+        const customPanel = document.getElementById('custom-panel');
+        const customCatName = document.getElementById('custom-cat-name');
+        const customIconGrid = document.getElementById('custom-icon-grid');
+        const habitName = document.getElementById('habit-name');
+        const habitGoals = document.getElementById('habit-goals');
+        const habitDesc = document.getElementById('habit-desc');
+        const habitUnit = document.getElementById('habit-unit');
+        const numericPreview = document.getElementById('numeric-preview');
+        const counterCircle = document.getElementById('counter-circle');
+        const errHabitName = document.getElementById('err-habit-name');
+        const btnSubmit = document.getElementById('btn-submit');
+        const toastEl = document.getElementById('toast-msg');
+
+        // ── Utility: get userId dari localStorage ────────────────────────
+        // Sumber kebenaran: app.js simpan user di key 'currentUser' saat login berhasil
+        // Format: { id: <number>, username: <string>, email: <string> }
+        function getUserId() {
+            try {
+                // Coba 'currentUser' (key resmi dari app.js)
+                const raw = localStorage.getItem('currentUser');
+                if (raw) {
+                    const u = JSON.parse(raw);
+                    if (u && u.id) return String(u.id);
+                }
+                // Fallback: format lama / alternatif lain
+                const alt = localStorage.getItem('habitflow_user') || sessionStorage.getItem('habitflow_user');
+                if (alt) {
+                    const u = JSON.parse(alt);
+                    if (u && u.id) return String(u.id);
+                }
+                return null;
+            } catch {
+                return null;
+            }
+        }
+
+        // ── Guard: jika tidak ada session, redirect ke login ──────────────
+        function requireAuth() {
+            const userId = getUserId();
+            if (!userId) {
+                // Simpan halaman tujuan agar bisa kembali setelah login
+                sessionStorage.setItem('redirectAfterLogin', 'add_habit.html');
+                window.location.href = 'login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // ── Toast ──────────────────────────────────────────────────────
+        function showToast(msg, duration = 2800) {
+            toastEl.textContent = msg;
+            toastEl.classList.add('show');
+            setTimeout(() => toastEl.classList.remove('show'), duration);
+        }
+
+        // ── Build custom icon picker ───────────────────────────────────
+        function buildCustomIconPicker() {
+            customIconGrid.innerHTML = '';
+            CUSTOM_ICONS.forEach(icon => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.setAttribute('data-icon', icon);
+                btn.setAttribute('aria-label', icon);
+                btn.style.cssText = `
+                width:36px;height:36px;border-radius:10px;
+                border:1.5px solid #d1fae5;background:#f0fdf8;
+                color:#059669;font-size:1rem;cursor:pointer;
+                display:flex;align-items:center;justify-content:center;
+                transition:all 0.18s ease;
+            `;
+                btn.innerHTML = `<i class="bi ${icon}"></i>`;
+                if (icon === selectedCustomIcon) {
+                    btn.style.background = 'linear-gradient(135deg,#34d399,#2dd4bf)';
+                    btn.style.color = '#fff';
+                    btn.style.borderColor = 'transparent';
+                    btn.style.boxShadow = '0 4px 12px rgba(52,211,153,0.4)';
+                }
                 btn.addEventListener('click', () => {
-                    catBtns.forEach(b => {
-                        b.classList.remove('active');
-                        b.style.backgroundColor = '';
-                        b.style.borderColor = '';
+                    selectedCustomIcon = icon;
+                    customIconGrid.querySelectorAll('button').forEach(b => {
+                        b.style.background = '#f0fdf8';
+                        b.style.color = '#059669';
+                        b.style.borderColor = '#d1fae5';
+                        b.style.boxShadow = '';
                     });
-                    
-                    btn.classList.add('active');
-                    
-                    const theme = document.documentElement.getAttribute('data-theme') || 'green';
-                    const primary = theme === 'blue' ? '#5BA4C9' : '#10B981';
-                    
-                    btn.style.backgroundColor = primary;
-                    btn.style.borderColor = primary;
-                    
-                    if(btn.dataset.cat === 'custom') {
-                        customDetails.classList.remove('hidden');
-                        customDetails.classList.add('flex');
-                    } else {
-                        customDetails.classList.add('hidden');
-                        customDetails.classList.remove('flex');
-                    }
+                    btn.style.background = 'linear-gradient(135deg,#34d399,#2dd4bf)';
+                    btn.style.color = '#fff';
+                    btn.style.borderColor = 'transparent';
+                    btn.style.boxShadow = '0 4px 12px rgba(52,211,153,0.4)';
                 });
-            });
-
-            if(catBtns.length > 0) catBtns[0].click();
-
-            // Custom Icon Selection
-            const iconBtns = document.querySelectorAll('.icon-btn');
-            iconBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    iconBtns.forEach(b => {
-                        b.classList.remove('active');
-                        b.style.backgroundColor = '';
-                        b.style.borderColor = '';
-                        b.style.color = '';
-                    });
-                    btn.classList.add('active');
-                    
-                    const theme = document.documentElement.getAttribute('data-theme') || 'green';
-                    const primary = theme === 'blue' ? '#5BA4C9' : '#10B981';
-                    
-                    btn.style.backgroundColor = primary;
-                    btn.style.borderColor = primary;
-                    btn.style.color = 'white';
-                });
-            });
-
-            if(iconBtns.length > 0) iconBtns[0].click(); // Activate first icon
-
-            // Evaluation method highlighting + preview widget toggle
-            const evalOptions = document.querySelectorAll('.evaluation-option');
-            const evalPreview = document.getElementById('eval-preview');
-            const numericPreview = document.getElementById('numeric-preview');
-
-            // Preview counter state
-            let previewCount = 0;
-            const previewValueEl = document.getElementById('preview-value');
-            const previewCircle = document.getElementById('preview-circle');
-
-            function updatePreviewCircle(val) {
-                previewCount = Math.max(0, val);
-                previewValueEl.value = previewCount;
-                if (previewCount > 0) {
-                    previewCircle.style.backgroundColor = 'var(--primary)';
-                    previewValueEl.style.color = 'white';
-                } else {
-                    previewCircle.style.backgroundColor = '';
-                    previewValueEl.style.color = 'var(--primary)';
-                }
-            }
-
-            document.getElementById('preview-minus').addEventListener('click', () => updatePreviewCircle(previewCount - 1));
-            document.getElementById('preview-plus').addEventListener('click', () => updatePreviewCircle(previewCount + 1));
-            previewValueEl.addEventListener('input', () => {
-                const v = parseInt(previewValueEl.value) || 0;
-                updatePreviewCircle(v);
-            });
-
-            const updateEvalColors = () => {
-                const theme = document.documentElement.getAttribute('data-theme') || 'green';
-                const primary = theme === 'blue' ? '#5BA4C9' : '#10B981';
-                const lightPrimary = theme === 'blue' ? '#f0f9ff' : '#f0fdf4';
-                
-                evalOptions.forEach(opt => {
-                    const input = opt.querySelector('input');
-                    const innerBorder = opt.querySelector('.border-target');
-                    
-                    if(input.checked) {
-                        opt.style.borderColor = primary;
-                        opt.style.backgroundColor = lightPrimary;
-                        if(innerBorder) innerBorder.style.borderColor = primary;
-                    } else {
-                        opt.style.borderColor = '';
-                        opt.style.backgroundColor = '';
-                        if(innerBorder) innerBorder.style.borderColor = '';
-                    }
-                });
-
-                // Show/hide preview widget
-                const selectedEval = document.querySelector('.evaluation-option input:checked')?.value;
-                if (selectedEval === 'numeric') {
-                    evalPreview.classList.remove('hidden');
-                    numericPreview.classList.remove('hidden');
-                    updatePreviewCircle(previewCount);
-                } else {
-                    evalPreview.classList.add('hidden');
-                    numericPreview.classList.add('hidden');
-                }
-            };
-
-            evalOptions.forEach(opt => {
-                opt.querySelector('input').addEventListener('change', updateEvalColors);
-            });
-            setTimeout(updateEvalColors, 50);
-
-            // Submission logic
-            document.getElementById('add-habit-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const btn = e.target.querySelector('button[type="submit"]');
-                const originalContent = btn.innerHTML;
-                
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating...';
-                btn.disabled = true;
-
-                // Gather data
-                const activeCatBtn = document.querySelector('.category-btn.active');
-                const catType = activeCatBtn ? activeCatBtn.dataset.cat : 'study';
-                let catName = activeCatBtn ? activeCatBtn.querySelector('span').innerText : 'Study';
-                let catIconHTML = activeCatBtn ? activeCatBtn.querySelector('div').innerHTML : '<i class="fa-solid fa-book"></i>';
-                
-                // If custom
-                if (catType === 'custom') {
-                    const customNameVal = document.getElementById('custom-cat-name').value;
-                    if (customNameVal) catName = customNameVal;
-                    const activeIconBtn = document.querySelector('.icon-btn.active');
-                    if (activeIconBtn) catIconHTML = activeIconBtn.innerHTML;
-                }
-
-                const evalType = document.querySelector('.evaluation-option input:checked').value;
-                const habitName = document.getElementById('habitName').value;
-                const habitGoals = document.getElementById('habitGoals').value;
-                const habitDesc = document.getElementById('habitDescription').value;
-                const habitUnit = document.getElementById('habitUnit')?.value || '';
-
-                // Create habit via Supabase (returns UUID)
-                const newHabit = {
-                    name: habitName,
-                    goals: habitGoals,
-                    description: habitDesc,
-                    category: catName,
-                    iconHtml: catIconHTML,
-                    evaluation: evalType,
-                    unit: habitUnit
-                };
-
-                const supabaseId = await addHabitToSupabase(newHabit);
-
-                if (supabaseId) {
-                    // Use the Supabase UUID as the habit ID
-                    newHabit.id = supabaseId;
-                } else {
-                    // Fallback to timestamp ID if Supabase fails
-                    newHabit.id = Date.now().toString();
-                }
-
-                // Update localStorage cache
-                const existingHabits = getHabits();
-                existingHabits.push(newHabit);
-                saveHabitsCache(existingHabits);
-
-                setTimeout(() => {
-                    showToast("Habit Created Successfully!");
-                    setTimeout(() => window.location.href = "index.html", 1000);
-                }, 300);
-            });
-        });
-
-        function updateLocalColors(theme) {
-            const primary = theme === 'blue' ? '#5BA4C9' : '#10B981';
-            const lightPrimary = theme === 'blue' ? '#f0f9ff' : '#f0fdf4';
-            
-            document.querySelectorAll('.theme-bg-update').forEach(el => el.style.backgroundColor = primary);
-            
-            const activeCat = document.querySelector('.category-btn.active');
-            if (activeCat) {
-                activeCat.style.backgroundColor = primary;
-                activeCat.style.borderColor = primary;
-            }
-            
-            const activeIcon = document.querySelector('.icon-btn.active');
-            if (activeIcon) {
-                activeIcon.style.backgroundColor = primary;
-                activeIcon.style.borderColor = primary;
-            }
-
-            document.querySelectorAll('.evaluation-option input:checked').forEach(input => {
-                const opt = input.closest('.evaluation-option');
-                opt.style.borderColor = primary;
-                opt.style.backgroundColor = lightPrimary;
-                
-                const innerBorder = opt.querySelector('.border-target');
-                if(innerBorder) innerBorder.style.borderColor = primary;
-            });
-            
-            document.querySelectorAll('.theme-focus-ring').forEach(el => {
-                el.classList.remove('focus:ring-green-500', 'focus:ring-blue-500');
-                el.classList.add(theme === 'blue' ? 'focus:ring-blue-500' : 'focus:ring-green-500');
+                customIconGrid.appendChild(btn);
             });
         }
+
+        // ── Build category card ────────────────────────────────────────
+        function buildCategoryCard(cat) {
+            const colors = CAT_COLOR_MAP[cat.icon_name] || { bg: '#f0fdf4', color: '#16a34a' };
+            const isCustomType = cat.type === 'custom';
+
+            const card = document.createElement('div');
+            card.className = 'category-card';
+            card.setAttribute('data-cat-id', cat.id);
+            card.setAttribute('role', 'button');
+            card.setAttribute('tabindex', '0');
+            card.setAttribute('aria-label', cat.name);
+
+            card.innerHTML = `
+            <div class="cat-icon-wrap" style="background:${isCustomType ? 'linear-gradient(135deg,#34d399,#2dd4bf)' : colors.bg};color:${isCustomType ? '#fff' : colors.color};">
+                <i class="bi ${cat.icon_name}"></i>
+            </div>
+            <span class="cat-label">${cat.name}</span>
+        `;
+
+            card.addEventListener('click', () => selectCategory(cat.id, card));
+            card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') selectCategory(cat.id, card); });
+            return card;
+        }
+
+        // ── Build "+" Custom button ────────────────────────────────────
+        function buildAddCustomCard() {
+            const card = document.createElement('div');
+            card.className = 'category-card';
+            card.id = 'card-add-custom';
+            card.setAttribute('role', 'button');
+            card.setAttribute('tabindex', '0');
+            card.setAttribute('aria-label', 'Add custom category');
+
+            card.innerHTML = `
+            <div class="cat-icon-wrap" style="background:linear-gradient(135deg,#34d399,#2dd4bf);color:#fff;">
+                <i class="bi bi-plus-lg"></i>
+            </div>
+            <span class="cat-label">Custom</span>
+        `;
+
+            card.addEventListener('click', () => {
+                // Deselect all categories, show custom panel
+                document.querySelectorAll('.category-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                selectedCategoryId = 'custom';
+                customPanel.classList.add('visible');
+            });
+            card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') card.click(); });
+            return card;
+        }
+
+        // ── Select category ────────────────────────────────────────────
+        function selectCategory(catId, cardEl) {
+            document.querySelectorAll('.category-card').forEach(c => c.classList.remove('selected'));
+            cardEl.classList.add('selected');
+            selectedCategoryId = catId;
+            customPanel.classList.remove('visible');
+        }
+
+        // ── Load categories from API ───────────────────────────────────
+        async function loadCategories() {
+            const userId = getUserId();
+
+            // Jika user belum login → redirect ke halaman login
+            if (!userId) {
+                requireAuth(); // menyimpan redirectAfterLogin & redirect ke login.html
+                return;
+            }
+
+            try {
+                const resp = await fetch(`${API_BASE}/api/categories`, {
+                    headers: { 'X-User-Id': userId }
+                });
+                const data = await resp.json();
+
+                if (!data.success) throw new Error(data.message);
+
+                categories = data.categories;
+                categoryGrid.innerHTML = '';
+
+                categories.forEach(cat => {
+                    categoryGrid.appendChild(buildCategoryCard(cat));
+                });
+
+                // Append "+ Custom" card
+                categoryGrid.appendChild(buildAddCustomCard());
+
+                // Auto-select first category
+                if (categories.length > 0) {
+                    const firstCard = categoryGrid.querySelector('.category-card');
+                    if (firstCard) selectCategory(categories[0].id, firstCard);
+                }
+
+            } catch (err) {
+                console.error('Failed to load categories:', err);
+                // Graceful fallback with hardcoded standard categories
+                categoryGrid.innerHTML = '';
+                const fallback = [
+                    { id: 1, name: 'Art', icon_name: 'bi-palette', type: 'standard' },
+                    { id: 2, name: 'Study', icon_name: 'bi-book', type: 'standard' },
+                    { id: 3, name: 'Entertain', icon_name: 'bi-controller', type: 'standard' },
+                    { id: 4, name: 'Meditate', icon_name: 'bi-moon-stars', type: 'standard' },
+                    { id: 5, name: 'Work', icon_name: 'bi-briefcase', type: 'standard' },
+                    { id: 6, name: 'Sport', icon_name: 'bi-dribbble', type: 'standard' },
+                    { id: 7, name: 'Finance', icon_name: 'bi-wallet2', type: 'standard' },
+                ];
+                fallback.forEach(cat => categoryGrid.appendChild(buildCategoryCard(cat)));
+                categoryGrid.appendChild(buildAddCustomCard());
+                if (fallback.length > 0) {
+                    const firstCard = categoryGrid.querySelector('.category-card');
+                    if (firstCard) selectCategory(fallback[0].id, firstCard);
+                }
+                showToast('⚠️ Could not reach server — using offline categories.');
+            }
+        }
+
+        // ── Evaluation method selection ────────────────────────────────
+        document.querySelectorAll('.eval-card').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.eval-card').forEach(c => {
+                    c.classList.remove('selected');
+                    c.setAttribute('aria-pressed', 'false');
+                });
+                card.classList.add('selected');
+                card.setAttribute('aria-pressed', 'true');
+                selectedEval = card.dataset.eval;
+
+                // Show numeric preview only for numeric type
+                if (selectedEval === 'numeric') {
+                    numericPreview.classList.add('visible');
+                } else {
+                    numericPreview.classList.remove('visible');
+                }
+            });
+            card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') card.click(); });
+        });
+
+        // ── Counter controls ───────────────────────────────────────────
+        document.getElementById('counter-minus').addEventListener('click', () => {
+            if (counterValue > 0) {
+                counterValue--;
+                updateCounter();
+            }
+        });
+        document.getElementById('counter-plus').addEventListener('click', () => {
+            counterValue++;
+            updateCounter();
+        });
+
+        function updateCounter() {
+            counterCircle.textContent = counterValue;
+            if (counterValue > 0) {
+                counterCircle.classList.add('active');
+            } else {
+                counterCircle.classList.remove('active');
+            }
+        }
+
+        // ── Form validation ────────────────────────────────────────────
+        function validateForm() {
+            let valid = true;
+
+            // Habit name
+            if (!habitName.value.trim()) {
+                habitName.classList.add('error');
+                errHabitName.style.display = 'block';
+                valid = false;
+            } else {
+                habitName.classList.remove('error');
+                errHabitName.style.display = 'none';
+            }
+
+            // Category
+            if (!selectedCategoryId) {
+                showToast('⚠️ Please select a category first.');
+                valid = false;
+            }
+
+            return valid;
+        }
+
+        habitName.addEventListener('input', () => {
+            if (habitName.value.trim()) {
+                habitName.classList.remove('error');
+                errHabitName.style.display = 'none';
+            }
+        });
+
+        // ── Submit ─────────────────────────────────────────────────────
+        btnSubmit.addEventListener('click', async () => {
+            if (!validateForm()) return;
+
+            const userId = getUserId();
+            if (!userId) {
+                showToast('❌ Please login first.');
+                setTimeout(() => window.location.href = 'login.html', 1200);
+                return;
+            }
+
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = `<i class="bi bi-arrow-repeat" style="font-size:1.1rem;animation:spin 0.8s linear infinite;"></i> Creating…`;
+
+            let finalCategoryId = selectedCategoryId;
+
+            try {
+                // If custom category, create it first
+                if (selectedCategoryId === 'custom') {
+                    const customName = customCatName.value.trim();
+                    if (!customName) {
+                        showToast('⚠️ Please enter a custom category name.');
+                        resetSubmitBtn();
+                        return;
+                    }
+
+                    const catResp = await fetch(`${API_BASE}/api/categories`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-User-Id': userId
+                        },
+                        body: JSON.stringify({ name: customName, icon_name: selectedCustomIcon })
+                    });
+                    const catData = await catResp.json();
+                    if (!catData.success) throw new Error(catData.message || 'Failed to create category');
+                    finalCategoryId = catData.categoryId;
+                }
+
+                // Create the habit
+                const payload = {
+                    habit_name: habitName.value.trim(),
+                    category_id: finalCategoryId,
+                    goals: habitGoals.value.trim() || null,
+                    description: habitDesc.value.trim() || null,
+                    evaluation_type: selectedEval
+                };
+
+                const habitResp = await fetch(`${API_BASE}/api/habits`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Id': userId
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const habitData = await habitResp.json();
+
+                if (!habitData.success) throw new Error(habitData.message || 'Failed to create habit');
+
+                // Success! Update local cache if exists
+                try {
+                    const cached = JSON.parse(localStorage.getItem('habitflow_habits') || '[]');
+                    cached.push({
+                        id: habitData.habitId,
+                        habit_name: payload.habit_name,
+                        goals: payload.goals,
+                        evaluation_type: payload.evaluation_type,
+                        category_id: finalCategoryId
+                    });
+                    localStorage.setItem('habitflow_habits', JSON.stringify(cached));
+                } catch { }
+
+                showToast('✅ Habit created successfully!');
+                btnSubmit.innerHTML = `<i class="bi bi-check-circle-fill" style="font-size:1.1rem;"></i> Created!`;
+                btnSubmit.style.background = 'linear-gradient(135deg,#059669,#047857)';
+
+                setTimeout(() => window.location.href = 'index.html', 1100);
+
+            } catch (err) {
+                console.error('Create habit error:', err);
+                showToast(`❌ ${err.message || 'Failed to create habit. Try again.'}`);
+                resetSubmitBtn();
+            }
+        });
+
+        function resetSubmitBtn() {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = `<i class="bi bi-plus-circle-fill" style="font-size:1.1rem;"></i> Create Habit`;
+            btnSubmit.style.background = '';
+        }
+
+        // ── CSS spinner keyframe (injected) ───────────────────────────
+        const styleTag = document.createElement('style');
+        styleTag.textContent = `@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`;
+        document.head.appendChild(styleTag);
+
+        // ── Init ───────────────────────────────────────────────────────
+        buildCustomIconPicker();
+        loadCategories();
     </script>
 </body>
+
 </html>

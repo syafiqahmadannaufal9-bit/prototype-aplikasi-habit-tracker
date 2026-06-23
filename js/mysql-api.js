@@ -192,36 +192,43 @@ function renderSyncedHabits(containerId, habits, dateStr, context = 'calendar') 
 
     if (context === 'calendar') {
         // Tampilan tabel untuk halaman Calendar
+        // FIX: Tambahkan overflow-y-auto dan max-height agar tabel tidak merusak layout saat >50 habit
         html = `
-        <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="overflow-x-auto overflow-y-auto max-h-[55vh] bg-white rounded-xl shadow-sm border border-gray-200 no-scrollbar relative">
             <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-gray-50 border-b border-gray-200 text-[10px] text-gray-500 uppercase tracking-wider">
-                        <th class="px-4 py-3 font-bold">Habit</th>
-                        <th class="px-4 py-3 font-bold hidden sm:table-cell">Kategori</th>
-                        <th class="px-4 py-3 font-bold">Status</th>
-                        <th class="px-4 py-3 font-bold text-center">Aksi</th>
+                <thead class="sticky top-0 bg-gray-50 z-10 shadow-sm">
+                    <tr class="border-b border-gray-200 text-[10px] text-gray-500 uppercase tracking-wider">
+                        <th class="px-4 py-3 font-bold bg-gray-50">Habit</th>
+                        <th class="px-4 py-3 font-bold hidden sm:table-cell bg-gray-50">Kategori</th>
+                        <th class="px-4 py-3 font-bold bg-gray-50">Status</th>
+                        <th class="px-4 py-3 font-bold text-center bg-gray-50">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">`;
 
         habits.forEach(h => {
-            const isCompleted = h.status === 'Completed';
+            // Support dua format field: checklist_status (TINYINT dari API baru)
+            // atau status (string 'Completed'/'Pending' dari format lama)
+            const isCompleted = (h.checklist_status === 1) || (h.status === 'Completed');
+            const categoryLabel = escapeHtml(h.category_name || h.habit_category || '-');
             const statusClass = isCompleted
                 ? 'text-green-600 bg-green-50'
                 : 'text-gray-500 bg-gray-50';
-            const statusLabel = isCompleted ? 'Completed ✓' : 'Pending';
+            const statusLabel = isCompleted ? 'Selesai ✓' : 'Belum';
             const btnClass = isCompleted
                 ? 'bg-[var(--primary)] text-white border-[var(--primary)] theme-bg-update'
-                : 'border-gray-300 text-gray-300';
+                : 'border-gray-300 text-gray-300 hover:border-[var(--primary)] hover:text-[var(--primary)]';
 
             html += `
-                <tr class="hover:bg-gray-50/50 transition-colors">
+                <tr class="hover:bg-gray-50/50 transition-colors ${isCompleted ? 'opacity-70' : ''}">
                     <td class="px-4 py-3">
-                        <span class="font-bold text-sm text-gray-900">${escapeHtml(h.habit_name)}</span>
+                        <div class="flex items-center gap-2">
+                            <i class="${escapeHtml(h.category_icon || 'bi-star')} text-gray-400 text-sm"></i>
+                            <span class="font-bold text-sm text-gray-900">${escapeHtml(h.habit_name)}</span>
+                        </div>
                     </td>
                     <td class="px-4 py-3 text-xs text-gray-500 hidden sm:table-cell">
-                        ${escapeHtml(h.habit_category || '-')}
+                        ${categoryLabel}
                     </td>
                     <td class="px-4 py-3">
                         <span class="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold uppercase ${statusClass}">
@@ -230,7 +237,8 @@ function renderSyncedHabits(containerId, habits, dateStr, context = 'calendar') 
                     </td>
                     <td class="px-4 py-3 text-center">
                         <button
-                            class="w-8 h-8 rounded-full flex items-center justify-center border transition-colors mx-auto ${btnClass}"
+                            class="w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all mx-auto ${btnClass}"
+                            title="${isCompleted ? 'Tandai belum selesai' : 'Tandai selesai'}"
                             onclick="event.stopPropagation(); mysqlToggleAndRefresh(${h.habit_id}, '${dateStr}', '${containerId}', '${context}')">
                             <i class="fa-solid fa-check text-xs ${isCompleted ? 'visible' : 'invisible'}"></i>
                         </button>
@@ -292,10 +300,29 @@ window.mysqlToggleAndRefresh = async function(habitId, dateStr, containerId, con
             const syncData = await fetchHabitsWithLogs(dateStr);
             if (syncData.success) {
                 renderSyncedHabits(containerId, syncData.habits, dateStr, context);
+
+                // Update localStorage completions agar red-dot kalender akurat
+                if (typeof getCompletions === 'function') {
+                    const completions = getCompletions();
+                    if (!completions[dateStr]) completions[dateStr] = {};
+                    syncData.habits.forEach(h => {
+                        completions[dateStr][h.habit_id] = (h.checklist_status === 1);
+                    });
+                    localStorage.setItem('completions', JSON.stringify(completions));
+                }
+
+                // Re-render grid kalender untuk update red-dot (hanya di halaman calendar)
+                if (typeof renderCalendarFull === 'function') {
+                    // Set flag agar renderCalendarFull tidak memanggil syncMysqlForDate ulang
+                    window._calendarSyncing = true;
+                    renderCalendarFull();
+                    window._calendarSyncing = false;
+                }
             }
             // Tampilkan toast jika tersedia
             if (typeof showToast === 'function') {
-                showToast(result.message);
+                const label = result.status === 'Completed' ? '✅ Habit selesai!' : '⬜ Habit dibatalkan.';
+                showToast(label);
             }
         } else {
             if (typeof showToast === 'function') {
